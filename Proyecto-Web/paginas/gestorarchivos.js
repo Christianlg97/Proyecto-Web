@@ -1620,12 +1620,73 @@ function previewFile(filePath) {
     window.open(`${baseUrl}?path=${encodeURIComponent(filePath)}&token=${user.token}`, '_blank');
 }
 
+/**
+ * Muestra un modal de confirmación personalizado en lugar del confirm() nativo.
+ * Devuelve una Promise que resuelve a true si el usuario acepta, false si cancela.
+ */
+function showConfirmModal(message, title, acceptLabel) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const msgEl = document.getElementById('confirmModalMessage');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const acceptBtn = document.getElementById('confirmModalAccept');
+        const cancelBtn = document.getElementById('confirmModalCancel');
+
+        if (!modal || !msgEl || !acceptBtn || !cancelBtn) {
+            // Fallback al confirm nativo si el modal no existe
+            resolve(window.confirm(message));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title || (currentLanguage === 'es' ? 'Confirmar acción' : 'Confirm action');
+        msgEl.textContent = message;
+        acceptBtn.textContent = acceptLabel || (currentLanguage === 'es' ? 'Eliminar' : 'Delete');
+        cancelBtn.textContent = translations[currentLanguage]?.cancel || 'Cancelar';
+
+        modal.style.display = 'block';
+
+        function handleAccept() {
+            modal.style.display = 'none';
+            cleanup();
+            resolve(true);
+        }
+
+        function handleCancel() {
+            modal.style.display = 'none';
+            cleanup();
+            resolve(false);
+        }
+
+        function handleBackdrop(e) {
+            if (e.target === modal) handleCancel();
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Escape') handleCancel();
+            if (e.key === 'Enter') handleAccept();
+        }
+
+        function cleanup() {
+            acceptBtn.removeEventListener('click', handleAccept);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleBackdrop);
+            document.removeEventListener('keydown', handleKey);
+        }
+
+        acceptBtn.addEventListener('click', handleAccept);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleBackdrop);
+        document.addEventListener('keydown', handleKey);
+    });
+}
+
 async function deleteItem(itemPath, isFolder = false) {
     const confirmMsg = isFolder
         ? translations[currentLanguage].confirmDeleteFolder
         : translations[currentLanguage].confirmDelete;
 
-    if (!confirm(confirmMsg)) return;
+    const title = currentLanguage === 'es' ? 'Confirmar eliminación' : 'Confirm deletion';
+    if (!await showConfirmModal(confirmMsg, title)) return;
 
     const user = getUserSession();
     if (!user) return;
@@ -1659,7 +1720,10 @@ async function deleteItem(itemPath, isFolder = false) {
 
 async function deleteSelectedItems() {
     if (!ensureHasSelection()) return;
-    if (!confirm(translations[currentLanguage].confirmDeleteFolder)) return;
+
+    const msg = translations[currentLanguage].confirmDeleteFolder;
+    const title = currentLanguage === 'es' ? 'Confirmar eliminación' : 'Confirm deletion';
+    if (!await showConfirmModal(msg, title)) return;
 
     const user = getUserSession();
     if (!user) return;
