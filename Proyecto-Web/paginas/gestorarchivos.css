@@ -872,10 +872,28 @@ button:active {
 }
 
 .manager-toolbar {
-    justify-content: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 8px 0 14px;
+    width: 100%;
+}
+
+.toolbar-row-1 {
+    display: flex;
     align-items: center;
     gap: 8px;
-    margin: 8px 0 14px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.toolbar-row-2 {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
 .manager-toolbar .filter-group {
@@ -887,6 +905,19 @@ button:active {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    animation: elasticPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: left center;
+}
+
+@keyframes elasticPopIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .action-btn.file-action i {
@@ -1370,6 +1401,20 @@ button:active {
         align-items: stretch;
     }
 
+    .toolbar-row-1,
+    .toolbar-row-2 {
+        width: 100%;
+        justify-content: stretch;
+        gap: 8px;
+    }
+
+    .toolbar-row-1 .action-btn,
+    .toolbar-row-2 .action-btn,
+    .toolbar-row-2 .selected-actions,
+    .toolbar-row-2 .admin-browse-inline {
+        width: 100%;
+    }
+
     .action-btn.icon-only {
         width: 100%;
     }
@@ -1735,4 +1780,44 @@ input, select, button, .control-btn, .action-btn, .tab-btn {
     font-size: 0.9rem;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+/* Celdas de nombre clickeables y animación en hover */
+.clickable-name-cell {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-name-cell:hover {
+    background-color: var(--table-row-hover);
+}
+
+.clickable-name-cell:hover .file-name {
+    color: var(--primary) !important;
+    text-decoration: underline;
+}
+
+/* Animación de wobbly/bounce para los iconos de archivos y carpetas */
+@keyframes coolIconAnim {
+    0% {
+        transform: scale(1) translateY(0);
+    }
+    30% {
+        transform: scale(1.22) translateY(-4px) rotate(-10deg);
+    }
+    60% {
+        transform: scale(1.22) translateY(-4px) rotate(10deg);
+    }
+    100% {
+        transform: scale(1.22) translateY(-4px) rotate(0);
+    }
+}
+
+.file-icon-anim {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.clickable-name-cell:hover .file-icon-anim {
+    animation: coolIconAnim 0.5s ease-out forwards;
 }

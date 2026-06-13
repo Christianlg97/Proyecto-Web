@@ -357,40 +357,44 @@
 
         <!-- Barra de acciones -->
         <div class="action-bar manager-toolbar">
-            <div id="selectedActions" class="selected-actions" style="display: none;">
-                <button id="sendButton" class="action-btn success file-action" title="Enviar archivos seleccionados">
-                    <i class="fas fa-file-export"></i> <span data-i18n="send">Enviar</span> (<span
-                        id="selectedCount">0</span>)
+            <div class="toolbar-row-1">
+                <button id="createFolderBtn" class="action-btn primary">
+                    <i class="fas fa-folder-plus"></i> <span data-i18n="createFolder">Crear Carpeta</span>
                 </button>
-                <button id="bulkMoveButton" class="action-btn file-action" title="Mover selección">
-                    <i class="fas fa-folder-tree"></i> <span data-i18n="move">Mover</span>
+                <button id="refreshFilesBtn" class="action-btn" onclick="refreshFileManager()">
+                    <i class="fas fa-sync-alt"></i> Refrescar
                 </button>
-                <button id="bulkDownloadButton" class="action-btn file-action" title="Descargar selección">
-                    <i class="fas fa-file-zipper"></i> <span data-i18n="downloadZip">Descargar como ZIP</span>
-                </button>
-                <button id="bulkDeleteButton" class="action-btn danger file-action" title="Eliminar selección">
-                    <i class="fas fa-trash"></i> <span data-i18n="delete">Eliminar</span>
-                </button>
+                <div class="filter-menu">
+                    <button id="filterMenuBtn" class="action-btn icon-only" type="button" title="Filtrar">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <div id="filterMenuContent" class="filter-menu-content">
+                        <button class="filter-option active" type="button" data-filter-value="all" data-i18n="filterAll">
+                            Ninguno
+                        </button>
+                        <button class="filter-option" type="button" data-filter-value="files" data-i18n="filterFiles">
+                            Archivos
+                        </button>
+                        <button class="filter-option" type="button" data-filter-value="folders" data-i18n="filterFolders">
+                            Carpetas
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button id="createFolderBtn" class="action-btn primary">
-                <i class="fas fa-folder-plus"></i> <span data-i18n="createFolder">Crear Carpeta</span>
-            </button>
-            <button id="refreshFilesBtn" class="action-btn" onclick="refreshFileManager()">
-                <i class="fas fa-sync-alt"></i> Refrescar
-            </button>
-            <div class="filter-menu">
-                <button id="filterMenuBtn" class="action-btn icon-only" type="button" title="Filtrar">
-                    <i class="fas fa-filter"></i>
-                </button>
-                <div id="filterMenuContent" class="filter-menu-content">
-                    <button class="filter-option active" type="button" data-filter-value="all" data-i18n="filterAll">
-                        Ninguno
+            <div class="toolbar-row-2">
+                <div id="selectedActions" class="selected-actions" style="display: none;">
+                    <button id="sendButton" class="action-btn success file-action" title="Enviar archivos seleccionados">
+                        <i class="fas fa-file-export"></i> <span data-i18n="send">Enviar</span> (<span
+                            id="selectedCount">0</span>)
                     </button>
-                    <button class="filter-option" type="button" data-filter-value="files" data-i18n="filterFiles">
-                        Archivos
+                    <button id="bulkMoveButton" class="action-btn file-action" title="Mover selección">
+                        <i class="fas fa-folder-tree"></i> <span data-i18n="move">Mover</span>
                     </button>
-                    <button class="filter-option" type="button" data-filter-value="folders" data-i18n="filterFolders">
-                        Carpetas
+                    <button id="bulkDownloadButton" class="action-btn file-action" title="Descargar selección">
+                        <i class="fas fa-file-zipper"></i> <span data-i18n="downloadZip">Descargar como ZIP</span>
+                    </button>
+                    <button id="bulkDeleteButton" class="action-btn danger file-action" title="Eliminar selección">
+                        <i class="fas fa-trash"></i> <span data-i18n="delete">Eliminar</span>
                     </button>
                 </div>
             </div>

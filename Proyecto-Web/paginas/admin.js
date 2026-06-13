@@ -797,15 +797,17 @@ function displayFiles(files) {
         const safeName = escapeHTML(item.name);
         const safePath = item.path.replace(/'/g, "\\'");
         html += `<tr>
-            <td><i class="fas ${icon}" style="margin-right:12px; color:${isDir ? '#ffd166' : '#4361ee'}"></i> ${safeName}</td>
+            <td class="clickable-name-cell" onclick="${isDir ? `openFolder('${safePath}')` : `previewFile('${safePath}')`}">
+                <i class="fas ${icon} file-icon-anim" style="margin-right:12px; color:${isDir ? '#ffd166' : '#4361ee'}"></i> 
+                <span class="file-name" title="${safeName}">${safeName}</span>
+            </td>
             <td><span class="badge">${item.sizeFormatted || '--'}</span></td>
             <td>${date}</td>
             <td><div class="action-cell">`;
         if (isDir) {
-            html += `<button onclick="openFolder('${safePath}')" class="table-btn btn-open"><i class="fas fa-folder-open"></i> ${translations[currentLanguage].open}</button>`;
+            html += ``;
         } else {
-            html += `<button onclick="previewFile('${safePath}')" class="table-btn btn-preview"><i class="fas fa-eye"></i> ${translations[currentLanguage].preview}</button>
-                     <button onclick="downloadFile('${safePath}')" class="table-btn btn-download"><i class="fas fa-download"></i> ${translations[currentLanguage].download}</button>`;
+            html += `<button onclick="downloadFile('${safePath}')" class="table-btn btn-download"><i class="fas fa-download"></i> ${translations[currentLanguage].download}</button>`;
         }
         html += `</div></td></tr>`;
     });

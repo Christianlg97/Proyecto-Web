@@ -923,20 +923,25 @@ function placeManagerControls() {
     const fileListControls = document.getElementById('fileListControls');
     const searchContainer = document.getElementById('searchContainer');
     const actionBar = document.querySelector('.manager-toolbar');
+    const toolbarRow1 = actionBar ? actionBar.querySelector('.toolbar-row-1') : null;
+    const toolbarRow2 = actionBar ? actionBar.querySelector('.toolbar-row-2') : null;
     const adminBrowseBar = document.getElementById('adminBrowseBar');
     const extensionGroup = document.getElementById('extensionFilterGroup');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
     if (actionBar) {
-        if (extensionGroup && extensionGroup.parentNode !== actionBar) {
-            actionBar.appendChild(extensionGroup);
+        const targetRow1 = toolbarRow1 || actionBar;
+        const targetRow2 = toolbarRow2 || actionBar;
+
+        if (extensionGroup && extensionGroup.parentNode !== targetRow1) {
+            targetRow1.appendChild(extensionGroup);
         }
-        if (clearFiltersBtn && clearFiltersBtn.parentNode !== actionBar) {
-            actionBar.appendChild(clearFiltersBtn);
+        if (clearFiltersBtn && clearFiltersBtn.parentNode !== targetRow1) {
+            targetRow1.appendChild(clearFiltersBtn);
         }
-        if (adminBrowseBar && adminBrowseBar.parentNode !== actionBar) {
+        if (adminBrowseBar && adminBrowseBar.parentNode !== targetRow2) {
             adminBrowseBar.classList.add('admin-browse-inline');
-            actionBar.appendChild(adminBrowseBar);
+            targetRow2.appendChild(adminBrowseBar);
         }
     }
 
@@ -1996,24 +2001,21 @@ function displayFiles(files) {
 
         html += `<tr>
             <td><input type="checkbox" class="file-checkbox" data-path="${safePath}" ${isSelected} onclick="toggleFileSelection('${safePath}')"></td>
-            <td><i class="fas ${fileIcon}" style="margin-right: 12px; color: ${iconColor}; font-size: 1.2rem;"></i> 
-                   <span class="file-name" title="${safeName}">${safeDisplayName}</span></td>
+            <td class="clickable-name-cell" onclick="${isDir ? `openFolder('${safePath}')` : `previewFile('${safePath}')`}">
+                <i class="fas ${fileIcon} file-icon-anim" style="margin-right: 12px; color: ${iconColor}; font-size: 1.2rem;"></i> 
+                <span class="file-name" title="${safeName}">${safeDisplayName}</span>
+            </td>
             <td><span class="badge">${sizeDisplay}</span></td>
             <td>${date}</td>
             <td><div class="action-cell" style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-start;">`;
 
         if (isDir) {
             html += `
-                <button onclick="openFolder('${safePath}')" class="table-btn btn-open" title="${translations[currentLanguage].openFolder}"><i class="fas fa-folder-open"></i> <span class="btn-text">${translations[currentLanguage].openFolder}</span></button>
                 <button onclick="downloadFile('${safePath}', true)" class="table-btn btn-download" title="${translations[currentLanguage].downloadZip}"><i class="fas fa-download"></i> <span class="btn-text">${translations[currentLanguage].download}</span></button>
                 <button onclick="openRenameModal('${safePath}', '${safeName}', true)" class="table-btn btn-rename" title="${translations[currentLanguage].rename}"><i class="fas fa-pencil-alt"></i> <span class="btn-text">${translations[currentLanguage].rename}</span></button>
                 <button onclick="deleteItem('${safePath}', true)" class="table-btn btn-delete" title="${translations[currentLanguage].delete}"><i class="fas fa-trash"></i> <span class="btn-text">${translations[currentLanguage].delete}</span></button>
             `;
         } else {
-            const canPreview = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'mp4', 'webm', 'ogg', 'mp3', 'wav', 'pdf', 'txt', 'html', 'css', 'js'].includes(item.name.split('.').pop().toLowerCase());
-            if (canPreview) {
-                html += `<button onclick="previewFile('${safePath}')" class="table-btn btn-preview" title="${translations[currentLanguage].preview}"><i class="fas fa-eye"></i> <span class="btn-text">${translations[currentLanguage].preview}</span></button>`;
-            }
             html += `
                 <button onclick="downloadFile('${safePath}')" class="table-btn btn-download" title="${translations[currentLanguage].download}"><i class="fas fa-download"></i> <span class="btn-text">${translations[currentLanguage].download}</span></button>
                 <button onclick="openMoveBrowserModal('${safePath}', '${safeName}')" class="table-btn btn-move" title="${translations[currentLanguage].move}"><i class="fas fa-arrows-alt"></i> <span class="btn-text">${translations[currentLanguage].move}</span></button>
