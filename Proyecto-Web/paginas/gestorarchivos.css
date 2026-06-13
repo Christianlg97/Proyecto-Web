@@ -674,7 +674,9 @@ button:active {
 
 .action-btn {
     width: auto;
-    padding: 12px 20px;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 20px;
     background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
@@ -774,7 +776,7 @@ button:active {
     padding: 0;
     display: flex !important;
     justify-content: flex-end;
-    align-items: flex-end;
+    align-items: center;
     flex: 0 1 260px;
 }
 
@@ -788,6 +790,24 @@ button:active {
     min-width: 220px !important;
     max-width: 260px;
     margin-bottom: 0;
+    position: relative !important;
+}
+
+.admin-browse-inline .filter-group label {
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 0 !important;
+    margin-bottom: 6px !important;
+    white-space: nowrap !important;
+}
+
+.admin-browse-inline .filter-select {
+    height: 44px !important;
+    box-sizing: border-box !important;
+    padding: 0 15px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
 }
 
 .search-stats {
@@ -826,7 +846,7 @@ button:active {
 .upload-drop-zone {
     width: 100%;
     min-height: 132px;
-    margin: 12px 0 14px;
+    margin: 12px 0 45px;
     border: 2px dashed var(--primary);
     border-radius: 16px;
     background: rgba(67, 97, 238, 0.04);
@@ -873,27 +893,27 @@ button:active {
 
 .manager-toolbar {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 8px 0 14px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin: 30px 0 14px;
     width: 100%;
 }
 
-.toolbar-row-1 {
+.toolbar-left {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    width: 100%;
 }
 
-.toolbar-row-2 {
+.toolbar-right {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-    width: 100%;
+    justify-content: flex-end;
+    margin-left: auto;
 }
 
 .manager-toolbar .filter-group {
@@ -905,19 +925,91 @@ button:active {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    animation: elasticPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    transform-origin: left center;
 }
 
-@keyframes elasticPopIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.8) translateY(8px);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+#selectedActions {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Custom Context Menu */
+.custom-context-menu {
+    position: absolute;
+    z-index: 10000;
+    min-width: 200px;
+    background: rgba(30, 30, 46, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    padding: 6px;
+    display: none;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.12s ease, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: top left;
+}
+
+.custom-context-menu.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    color: var(--text-primary, #e2e8f0);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.context-menu-item i {
+    font-size: 1rem;
+    color: var(--primary, #4361ee);
+    width: 16px;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.context-menu-item:hover i {
+    transform: scale(1.15);
+}
+
+.context-menu-item.danger {
+    color: #ff5a79;
+}
+
+.context-menu-item.danger i {
+    color: #ff5a79;
+}
+
+.context-menu-item.danger:hover {
+    background: rgba(255, 90, 121, 0.15);
+    color: #ff5a79;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 6px 4px;
 }
 
 .action-btn.file-action i {
@@ -1401,17 +1493,17 @@ button:active {
         align-items: stretch;
     }
 
-    .toolbar-row-1,
-    .toolbar-row-2 {
+    .toolbar-left,
+    .toolbar-right {
         width: 100%;
         justify-content: stretch;
         gap: 8px;
     }
 
-    .toolbar-row-1 .action-btn,
-    .toolbar-row-2 .action-btn,
-    .toolbar-row-2 .selected-actions,
-    .toolbar-row-2 .admin-browse-inline {
+    .toolbar-left .action-btn,
+    .toolbar-right .action-btn,
+    .toolbar-right .selected-actions,
+    .toolbar-right .admin-browse-inline {
         width: 100%;
     }
 
@@ -1782,17 +1874,17 @@ input, select, button, .control-btn, .action-btn, .tab-btn {
     font-weight: 500;
 }
 
-/* Celdas de nombre clickeables y animación en hover */
-.clickable-name-cell {
+/* Fila del listado de archivos interactiva */
+.file-row {
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
-.clickable-name-cell:hover {
-    background-color: var(--table-row-hover);
+.file-row:hover {
+    background-color: var(--table-row-hover, rgba(255, 255, 255, 0.04));
 }
 
-.clickable-name-cell:hover .file-name {
+.file-row:hover .file-name {
     color: var(--primary) !important;
     text-decoration: underline;
 }
@@ -1818,6 +1910,6 @@ input, select, button, .control-btn, .action-btn, .tab-btn {
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.clickable-name-cell:hover .file-icon-anim {
+.file-row:hover .file-icon-anim {
     animation: coolIconAnim 0.5s ease-out forwards;
 }

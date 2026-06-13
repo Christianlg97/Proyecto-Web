@@ -186,7 +186,8 @@ const translations = {
         received: 'Recibidos',
         path: 'Ruta',
         browse: 'Examinar...',
-        noFileSelected: 'No se ha seleccionado ningún archivo'
+        noFileSelected: 'No se ha seleccionado ningún archivo',
+        fileType: 'Tipo'
     },
     en: {
         title: 'File Management System',
@@ -363,7 +364,8 @@ const translations = {
         received: 'Received',
         path: 'Path',
         browse: 'Browse...',
-        noFileSelected: 'No file selected'
+        noFileSelected: 'No file selected',
+        fileType: 'Type'
     }
 };
 
@@ -923,25 +925,25 @@ function placeManagerControls() {
     const fileListControls = document.getElementById('fileListControls');
     const searchContainer = document.getElementById('searchContainer');
     const actionBar = document.querySelector('.manager-toolbar');
-    const toolbarRow1 = actionBar ? actionBar.querySelector('.toolbar-row-1') : null;
-    const toolbarRow2 = actionBar ? actionBar.querySelector('.toolbar-row-2') : null;
+    const toolbarLeft = actionBar ? actionBar.querySelector('.toolbar-left') : null;
+    const toolbarRight = actionBar ? actionBar.querySelector('.toolbar-right') : null;
     const adminBrowseBar = document.getElementById('adminBrowseBar');
     const extensionGroup = document.getElementById('extensionFilterGroup');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
     if (actionBar) {
-        const targetRow1 = toolbarRow1 || actionBar;
-        const targetRow2 = toolbarRow2 || actionBar;
+        const targetLeft = toolbarLeft || actionBar;
+        const targetRight = toolbarRight || actionBar;
 
-        if (extensionGroup && extensionGroup.parentNode !== targetRow1) {
-            targetRow1.appendChild(extensionGroup);
+        if (extensionGroup && extensionGroup.parentNode !== targetLeft) {
+            targetLeft.appendChild(extensionGroup);
         }
-        if (clearFiltersBtn && clearFiltersBtn.parentNode !== targetRow1) {
-            targetRow1.appendChild(clearFiltersBtn);
+        if (clearFiltersBtn && clearFiltersBtn.parentNode !== targetLeft) {
+            targetLeft.appendChild(clearFiltersBtn);
         }
-        if (adminBrowseBar && adminBrowseBar.parentNode !== targetRow2) {
+        if (adminBrowseBar && adminBrowseBar.parentNode !== targetRight) {
             adminBrowseBar.classList.add('admin-browse-inline');
-            targetRow2.appendChild(adminBrowseBar);
+            targetRight.appendChild(adminBrowseBar);
         }
     }
 
@@ -1963,9 +1965,9 @@ function displayFiles(files) {
     html += `<thead><tr>
         <th style="width: 40px;"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()" class="file-checkbox"></th>
         <th>${translations[currentLanguage].fileName}</th>
-        <th style="width: 100px;">${translations[currentLanguage].size}</th>
+        <th style="width: 120px;">${translations[currentLanguage].size}</th>
         <th style="width: 160px;">${translations[currentLanguage].uploaded}</th>
-        <th style="min-width: 320px;">${translations[currentLanguage].actions}</th>
+        <th style="width: 180px;">${translations[currentLanguage].fileType}</th>
     </tr></thead>`;
     html += '<tbody>';
 
@@ -1984,6 +1986,7 @@ function displayFiles(files) {
         const safeName = escapeHTML(item.name);
         const safeDisplayName = escapeHTML(displayName);
         const safePath = item.path.replace(/'/g, "\\'");
+        const safeNameEscaped = safeName.replace(/'/g, "\\'");
 
         let fileIcon = isDir ? 'fa-folder' : 'fa-file';
         let iconColor = isDir ? '#ffd166' : '#4361ee';
@@ -1999,33 +2002,18 @@ function displayFiles(files) {
             else if (['js', 'html', 'css', 'json', 'py', 'java', 'cpp', 'c', 'php', 'xml', 'yaml'].includes(ext)) fileIcon = 'fa-file-code';
         }
 
-        html += `<tr>
-            <td><input type="checkbox" class="file-checkbox" data-path="${safePath}" ${isSelected} onclick="toggleFileSelection('${safePath}')"></td>
-            <td class="clickable-name-cell" onclick="${isDir ? `openFolder('${safePath}')` : `previewFile('${safePath}')`}">
+        const typeDisplay = getFileTypeDisplay(item.name, isDir);
+
+        html += `<tr class="file-row" oncontextmenu="showContextMenu(event, {path: '${safePath}', isDirectory: ${isDir}, name: '${safeNameEscaped}'})" onclick="handleRowClick(event, '${safePath}', ${isDir})">
+            <td><input type="checkbox" class="file-checkbox" data-path="${safePath}" ${isSelected} onclick="event.stopPropagation(); toggleFileSelection('${safePath}')"></td>
+            <td>
                 <i class="fas ${fileIcon} file-icon-anim" style="margin-right: 12px; color: ${iconColor}; font-size: 1.2rem;"></i> 
                 <span class="file-name" title="${safeName}">${safeDisplayName}</span>
             </td>
             <td><span class="badge">${sizeDisplay}</span></td>
             <td>${date}</td>
-            <td><div class="action-cell" style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-start;">`;
-
-        if (isDir) {
-            html += `
-                <button onclick="downloadFile('${safePath}', true)" class="table-btn btn-download" title="${translations[currentLanguage].downloadZip}"><i class="fas fa-download"></i> <span class="btn-text">${translations[currentLanguage].download}</span></button>
-                <button onclick="openRenameModal('${safePath}', '${safeName}', true)" class="table-btn btn-rename" title="${translations[currentLanguage].rename}"><i class="fas fa-pencil-alt"></i> <span class="btn-text">${translations[currentLanguage].rename}</span></button>
-                <button onclick="deleteItem('${safePath}', true)" class="table-btn btn-delete" title="${translations[currentLanguage].delete}"><i class="fas fa-trash"></i> <span class="btn-text">${translations[currentLanguage].delete}</span></button>
-            `;
-        } else {
-            html += `
-                <button onclick="downloadFile('${safePath}')" class="table-btn btn-download" title="${translations[currentLanguage].download}"><i class="fas fa-download"></i> <span class="btn-text">${translations[currentLanguage].download}</span></button>
-                <button onclick="openMoveBrowserModal('${safePath}', '${safeName}')" class="table-btn btn-move" title="${translations[currentLanguage].move}"><i class="fas fa-arrows-alt"></i> <span class="btn-text">${translations[currentLanguage].move}</span></button>
-                <button onclick="openRenameModal('${safePath}', '${safeName}')" class="table-btn btn-rename" title="${translations[currentLanguage].rename}"><i class="fas fa-pencil-alt"></i> <span class="btn-text">${translations[currentLanguage].rename}</span></button>
-                <button onclick="deleteItem('${safePath}')" class="table-btn btn-delete" title="${translations[currentLanguage].delete}"><i class="fas fa-trash"></i> <span class="btn-text">${translations[currentLanguage].delete}</span></button>
-		        <button onclick="openShareModal('${safePath}', '${safeName}')" class="table-btn btn-share" title="${translations[currentLanguage].share}"><i class="fas fa-share-alt"></i> <span class="btn-text">${translations[currentLanguage].share}</span></button>
-            `;
-        }
-
-        html += `</div></td></tr>`;
+            <td><span class="file-type-text">${typeDisplay}</span></td>
+        </tr>`;
     });
 
     html += '</tbody></table></div>';
@@ -2723,6 +2711,250 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!document.getElementById('settingsDropdown').contains(e.target))
                 document.getElementById('settingsDropdown').classList.remove('open');
         });
+    }
+});
+
+function getFileTypeDisplay(name, isDir) {
+    if (isDir) {
+        return currentLanguage === 'es' ? 'Carpeta' : 'Folder';
+    }
+    const ext = name.split('.').pop().toLowerCase();
+    
+    const types = {
+        es: {
+            pdf: 'Documento PDF',
+            jpg: 'Imagen JPEG',
+            jpeg: 'Imagen JPEG',
+            png: 'Imagen PNG',
+            gif: 'Imagen GIF',
+            webp: 'Imagen WebP',
+            svg: 'Gráfico vectorial SVG',
+            mp3: 'Audio MP3',
+            wav: 'Audio WAV',
+            flac: 'Audio FLAC',
+            mp4: 'Video MP4',
+            webm: 'Video WebM',
+            zip: 'Comprimido ZIP',
+            rar: 'Comprimido RAR',
+            '7z': 'Comprimido 7z',
+            html: 'Documento HTML',
+            css: 'Hoja de estilo CSS',
+            js: 'Archivo JavaScript',
+            json: 'Documento JSON',
+            txt: 'Documento de texto',
+            exe: 'Aplicación ejecutable',
+            default: `Archivo ${ext.toUpperCase()}`
+        },
+        en: {
+            pdf: 'PDF Document',
+            jpg: 'JPEG Image',
+            jpeg: 'JPEG Image',
+            png: 'PNG Image',
+            gif: 'GIF Image',
+            webp: 'WebP Image',
+            svg: 'SVG Vector Image',
+            mp3: 'MP3 Audio',
+            wav: 'WAV Audio',
+            flac: 'FLAC Audio',
+            mp4: 'MP4 Video',
+            webm: 'WebM Video',
+            zip: 'ZIP Archive',
+            rar: 'RAR Archive',
+            '7z': '7z Archive',
+            html: 'HTML Document',
+            css: 'CSS Stylesheet',
+            js: 'JavaScript File',
+            json: 'JSON Document',
+            txt: 'Text Document',
+            exe: 'Executable Application',
+            default: `${ext.toUpperCase()} File`
+        }
+    };
+    
+    const langTypes = types[currentLanguage] || types['es'];
+    return langTypes[ext] || langTypes['default'];
+}
+
+function handleRowClick(e, path, isDir) {
+    if (e.target.closest('.file-checkbox') || e.target.closest('input')) {
+        return;
+    }
+    if (isDir) {
+        openFolder(path);
+    } else {
+        previewFile(path);
+    }
+}
+
+// ============================================================
+// Menú Contextual (Click Derecho)
+// ============================================================
+
+function rightClickSelect(filePath) {
+    if (!selectedFiles.has(filePath)) {
+        selectedFiles.clear();
+        selectedFiles.add(filePath);
+        updateSelectedCount();
+        updateCheckboxState();
+    }
+}
+
+function showContextMenu(e, item) {
+    e.preventDefault();
+    rightClickSelect(item.path);
+    
+    let menu = document.getElementById('customContextMenu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'customContextMenu';
+        menu.className = 'custom-context-menu';
+        document.body.appendChild(menu);
+    }
+    
+    const count = selectedFiles.size;
+    const isSingle = count === 1;
+    const isDir = item.isDirectory;
+    
+    let html = '';
+    
+    // 1. Enviar (Send)
+    html += `
+        <div class="context-menu-item" onclick="triggerContextAction('send')">
+            <i class="fas fa-file-export"></i>
+            <span>${translations[currentLanguage].send} ${!isSingle ? `(${count})` : ''}</span>
+        </div>
+    `;
+    
+    // 2. Mover (Move)
+    html += `
+        <div class="context-menu-item" onclick="triggerContextAction('move')">
+            <i class="fas fa-arrows-alt"></i>
+            <span>${translations[currentLanguage].move} ${!isSingle ? `(${count})` : ''}</span>
+        </div>
+    `;
+    
+    // 3. Descargar (Download / Download ZIP)
+    const downloadLabel = isSingle && !isDir ? translations[currentLanguage].download : translations[currentLanguage].downloadZip;
+    html += `
+        <div class="context-menu-item" onclick="triggerContextAction('download')">
+            <i class="fas fa-download"></i>
+            <span>${downloadLabel} ${!isSingle ? `(${count})` : ''}</span>
+        </div>
+    `;
+    
+    // 4. Compartir (Share) (only if single file)
+    if (isSingle && !isDir) {
+        html += `
+            <div class="context-menu-item" onclick="triggerContextAction('share')">
+                <i class="fas fa-share-alt"></i>
+                <span>${translations[currentLanguage].share}</span>
+            </div>
+        `;
+    }
+    
+    // 5. Renombrar (Rename) (only if single)
+    if (isSingle) {
+        html += `
+            <div class="context-menu-item" onclick="triggerContextAction('rename')">
+                <i class="fas fa-pencil-alt"></i>
+                <span>${translations[currentLanguage].rename}</span>
+            </div>
+        `;
+    }
+    
+    // Separador
+    html += `<div class="context-menu-separator"></div>`;
+    
+    // 6. Eliminar (Delete)
+    html += `
+        <div class="context-menu-item danger" onclick="triggerContextAction('delete')">
+            <i class="fas fa-trash"></i>
+            <span>${translations[currentLanguage].delete} ${!isSingle ? `(${count})` : ''}</span>
+        </div>
+    `;
+    
+    menu.innerHTML = html;
+    
+    // Position menu
+    menu.style.display = 'block';
+    
+    const menuWidth = 200;
+    const menuHeight = isSingle ? (isDir ? 190 : 230) : 150;
+    let posX = e.pageX;
+    let posY = e.pageY;
+    
+    if (posX + menuWidth > window.innerWidth + window.scrollX) {
+        posX = e.pageX - menuWidth;
+    }
+    if (posY + menuHeight > window.innerHeight + window.scrollY) {
+        posY = e.pageY - menuHeight;
+    }
+    
+    menu.style.left = posX + 'px';
+    menu.style.top = posY + 'px';
+    
+    // Trigger fade/scale entrance
+    setTimeout(() => {
+        menu.classList.add('visible');
+    }, 10);
+}
+
+function triggerContextAction(action) {
+    const selectedPaths = Array.from(selectedFiles);
+    if (selectedPaths.length === 0) return;
+    
+    const firstPath = selectedPaths[0];
+    const firstItem = filteredFiles.find(f => f.path === firstPath) || { path: firstPath, isDirectory: false, name: firstPath.split('/').pop() };
+    
+    closeContextMenu();
+    
+    if (action === 'send') {
+        openSendModal();
+    } else if (action === 'move') {
+        if (selectedPaths.length === 1) {
+            openMoveBrowserModal(firstItem.path, firstItem.name);
+        } else {
+            openBulkMoveModal();
+        }
+    } else if (action === 'download') {
+        if (selectedPaths.length === 1) {
+            downloadFile(firstItem.path, firstItem.isDirectory);
+        } else {
+            downloadSelectedFiles();
+        }
+    } else if (action === 'share') {
+        openShareModal(firstItem.path, firstItem.name);
+    } else if (action === 'rename') {
+        openRenameModal(firstItem.path, firstItem.name, firstItem.isDirectory);
+    } else if (action === 'delete') {
+        if (selectedPaths.length === 1) {
+            deleteItem(firstItem.path, firstItem.isDirectory);
+        } else {
+            deleteSelectedItems();
+        }
+    }
+}
+
+function closeContextMenu() {
+    const menu = document.getElementById('customContextMenu');
+    if (menu) {
+        menu.classList.remove('visible');
+        setTimeout(() => {
+            menu.style.display = 'none';
+        }, 150);
+    }
+}
+
+// Escuchar eventos globales para cerrar el menú contextual
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.custom-context-menu')) {
+        closeContextMenu();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeContextMenu();
     }
 });
 

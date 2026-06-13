@@ -357,7 +357,7 @@
 
         <!-- Barra de acciones -->
         <div class="action-bar manager-toolbar">
-            <div class="toolbar-row-1">
+            <div class="toolbar-left">
                 <button id="createFolderBtn" class="action-btn primary">
                     <i class="fas fa-folder-plus"></i> <span data-i18n="createFolder">Crear Carpeta</span>
                 </button>
@@ -381,24 +381,12 @@
                     </div>
                 </div>
             </div>
-            <div class="toolbar-row-2">
-                <div id="selectedActions" class="selected-actions" style="display: none;">
-                    <button id="sendButton" class="action-btn success file-action" title="Enviar archivos seleccionados">
-                        <i class="fas fa-file-export"></i> <span data-i18n="send">Enviar</span> (<span
-                            id="selectedCount">0</span>)
-                    </button>
-                    <button id="bulkMoveButton" class="action-btn file-action" title="Mover selección">
-                        <i class="fas fa-folder-tree"></i> <span data-i18n="move">Mover</span>
-                    </button>
-                    <button id="bulkDownloadButton" class="action-btn file-action" title="Descargar selección">
-                        <i class="fas fa-file-zipper"></i> <span data-i18n="downloadZip">Descargar como ZIP</span>
-                    </button>
-                    <button id="bulkDeleteButton" class="action-btn danger file-action" title="Eliminar selección">
-                        <i class="fas fa-trash"></i> <span data-i18n="delete">Eliminar</span>
-                    </button>
-                </div>
+            <div class="toolbar-right">
+                <!-- Se inyecta adminBrowseBar dinámicamente -->
             </div>
         </div>
+        <!-- Elemento seleccionado mantenido oculto para compatibilidad JS -->
+        <div id="selectedActions" style="display: none !important;"></div>
 
         <!-- Buscador -->
         <div id="searchContainer" class="search-container">
