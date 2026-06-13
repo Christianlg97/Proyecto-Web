@@ -41,18 +41,18 @@ const { readSecret } = require('./secrets.js');
 // Permisos basados en bitmask en formato hexadecimal para combinar privilegios mediante operaciones bitwise (&, |)
 const PERMISSIONS = {
     // Permisos base (bits bajos)
-    LOGIN:              0x00000001, // 1      - Permite iniciar sesión
-    ADMIN:              0x00000002, // 2      - Permite ver archivos de otros usuarios (listar, previsualizar, descargar)
-    SUPERADMIN:         0x00000004, // 4      - Permite acceder al panel de administración (listado de usuarios, etc.)
-    FILE_MANAGER:       0x00000008, // 8      - Permite acceder al Gestor de Archivos (básico)
+    LOGIN: 0x00000001, // 1      - Permite iniciar sesión
+    ADMIN: 0x00000002, // 2      - Permite ver archivos de otros usuarios (listar, previsualizar, descargar)
+    SUPERADMIN: 0x00000004, // 4      - Permite acceder al panel de administración (listado de usuarios, etc.)
+    FILE_MANAGER: 0x00000008, // 8      - Permite acceder al Gestor de Archivos (básico)
 
     // Nuevos permisos granulares (administración)
-    MANAGE_USERS_STATUS:    0x00000010, // 16   - Activar/desactivar/bannear usuarios
-    MANAGE_USER_LIMITS:     0x00000020, // 32   - Modificar cuotas, límites de archivo, ancho de banda
-    KICK_USERS:             0x00000040, // 64   - Invalidar sesión de otros usuarios
-    CHANGE_ANY_PASSWORD:    0x00000080, // 128  - Cambiar contraseña de cualquier usuario (excepto superadmin)
-    DELETE_USERS:           0x00000100, // 256  - Eliminar usuarios
-    MANAGE_IPS:             0x00000200, // 512  - Banear/desbanear direcciones IP
+    MANAGE_USERS_STATUS: 0x00000010, // 16   - Activar/desactivar/bannear usuarios
+    MANAGE_USER_LIMITS: 0x00000020, // 32   - Modificar cuotas, límites de archivo, ancho de banda
+    KICK_USERS: 0x00000040, // 64   - Invalidar sesión de otros usuarios
+    CHANGE_ANY_PASSWORD: 0x00000080, // 128  - Cambiar contraseña de cualquier usuario (excepto superadmin)
+    DELETE_USERS: 0x00000100, // 256  - Eliminar usuarios
+    MANAGE_IPS: 0x00000200, // 512  - Banear/desbanear direcciones IP
     MANAGE_GLOBAL_SETTINGS: 0x00000400  // 1024 - Modificar configuración global
 };
 
@@ -139,16 +139,16 @@ async function startServer() {
     }
 
     // Función para verificar si un token tiene un permiso específico
-// Además, el bit SUPERADMIN otorga todos los permisos (hereda)
-async function hasPermission(token, requiredBit) {
-    if (!token) return false;
-    const [rows] = await promisePool.query(
-        'SELECT role_mask FROM users WHERE token = ? AND token_expires > NOW()',
-        [token]
-    );
-    if (rows.length === 0) return false;
-    const mask = normalizeRoleMask(rows[0].role_mask);
-    // SUPERADMIN tiene todos los permisos
+    // Además, el bit SUPERADMIN otorga todos los permisos (hereda)
+    async function hasPermission(token, requiredBit) {
+        if (!token) return false;
+        const [rows] = await promisePool.query(
+            'SELECT role_mask FROM users WHERE token = ? AND token_expires > NOW()',
+            [token]
+        );
+        if (rows.length === 0) return false;
+        const mask = normalizeRoleMask(rows[0].role_mask);
+        // SUPERADMIN tiene todos los permisos
     }
 
     // Función auxiliar para obtener el usuario completo a partir de un token (sin verificar permisos)
@@ -236,8 +236,8 @@ async function hasPermission(token, requiredBit) {
          END
          WHERE role_mask IS NULL OR role_mask = 0`,
         [PERMISSIONS.LOGIN | PERMISSIONS.ADMIN | PERMISSIONS.SUPERADMIN,
-         PERMISSIONS.LOGIN | PERMISSIONS.ADMIN,
-         PERMISSIONS.LOGIN]
+        PERMISSIONS.LOGIN | PERMISSIONS.ADMIN,
+        PERMISSIONS.LOGIN]
     );
 
     // Tablas avanzadas (banned_ips, admin_logs, global_settings)
@@ -803,7 +803,7 @@ async function hasPermission(token, requiredBit) {
             }
 
             const [users] = await promisePool.query(
-                     `SELECT u.id, u.quota_bytes, u.max_file_size_bytes, u.bandwidth_kbps,
+                `SELECT u.id, u.quota_bytes, u.max_file_size_bytes, u.bandwidth_kbps,
                            (SELECT COALESCE(SUM(filesize), 0) FROM files WHERE user_id = u.id) AS used_bytes,
                            (SELECT COALESCE(SUM(downloads), 0) FROM shared_links WHERE user_id = u.id) AS downloads
                        FROM users u 
@@ -819,7 +819,7 @@ async function hasPermission(token, requiredBit) {
             const [settings] = await promisePool.query(
                 "SELECT setting_key, setting_value FROM global_settings WHERE setting_key IN ('default_quota_bytes', 'default_max_file_size_bytes', 'default_bandwidth_kbps')"
             );
-            
+
             const globalSettings = {};
             settings.forEach(s => globalSettings[s.setting_key] = s.setting_value);
 
@@ -831,9 +831,9 @@ async function hasPermission(token, requiredBit) {
                 downloads: parseInt(user.downloads || 0)
             };
 
-            res.json({ 
-                success: true, 
-                stats 
+            res.json({
+                success: true,
+                stats
             });
         } catch (error) {
             console.error('Error obteniendo estadísticas del usuario:', error);
@@ -1362,6 +1362,51 @@ async function hasPermission(token, requiredBit) {
             res.sendFile(resolvedPath);
         } catch (error) {
             console.error('Error en preview:', error);
+            res.status(500).json({ success: false, message: 'Error del servidor' });
+        }
+    });
+
+    /**
+     * Ruta para crear una carpeta (usuario estándar)
+     */
+    app.post('/api/mkdir/:username', async (req, res) => {
+        try {
+            const { username } = req.params;
+            const { token, folderName } = req.body;
+
+            if (!token || !folderName) {
+                return res.status(400).json({ success: false, message: 'Token y nombre de carpeta requeridos' });
+            }
+
+            // Validar que la sesión es activa para el usuario que solicita la creación
+            const [users] = await promisePool.query(
+                'SELECT id FROM users WHERE username = ? AND token = ? AND token_expires > NOW()',
+                [username, token]
+            );
+            if (users.length === 0) {
+                return res.status(401).json({ success: false, message: 'Sesión inválida o expirada' });
+            }
+
+            const userDir = path.join('/home', username);
+            const targetDir = path.join(userDir, folderName);
+            const resolvedTarget = path.resolve(targetDir);
+            const resolvedUserDir = path.resolve(userDir);
+
+            // Validar Path Traversal
+            if (!resolvedTarget.startsWith(resolvedUserDir)) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado' });
+            }
+
+            if (fs.existsSync(resolvedTarget)) {
+                return res.status(400).json({ success: false, message: 'La carpeta ya existe' });
+            }
+
+            // Crear la carpeta física
+            fs.mkdirSync(resolvedTarget, { recursive: true, mode: 0o755 });
+
+            res.json({ success: true, message: 'Carpeta creada exitosamente' });
+        } catch (error) {
+            console.error('Error creando carpeta:', error);
             res.status(500).json({ success: false, message: 'Error del servidor' });
         }
     });
