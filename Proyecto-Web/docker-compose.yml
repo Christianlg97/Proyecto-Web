@@ -1,0 +1,95 @@
+# ARCHIVO DE CONFIGURACIÓN DOCKER COMPOSE
+# Define y orquestra los tres servicios principales de la aplicación: MySQL, Node.js y Nginx.
+
+services:
+  # Servicio de Base de Datos (MySQL)
+  mysql:
+    image: mysql:latest
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE_FILE: /run/secrets/mysql_database
+      MYSQL_USER_FILE: /run/secrets/mysql_user
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+    secrets:
+      - mysql_root_password
+      - mysql_database
+      - mysql_user
+      - mysql_password
+    volumes:  
+      - mysql_data:/var/lib/mysql     # Persistencia de datos de la BD
+      - ./mysql:/docker-entrypoint-initdb.d # Scripts SQL iniciales (se ejecutan al crear el contenedor)
+    ports:
+      - "3306:3306"                   # Puerto estándar de MySQL
+    command: --socket=/tmp/mysql.sock
+    networks:
+      - app_network
+    healthcheck:                      # Verifica que MySQL esté listo antes de arrancar Node.js
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$(cat /run/secrets/mysql_root_password)"]
+      timeout: 10s
+      retries: 10
+
+  # Servicio de Backend (Node.js)
+  nodejs:
+    build: ./nodejs                   # Construye la imagen desde la carpeta ./nodejs
+    container_name: nodejs_app
+    restart: always
+    ports:
+      - "3000:3000"                   # Puerto interno de la API
+    volumes:
+      - ./nodejs:/app                 # Sincroniza el código fuente
+      - /app/node_modules             # Evita que node_modules locales sobrescriban los del contenedor
+      - ./users:/home                 # Directorio donde se almacenan los archivos de los usuarios
+      - ./mysql:/mysql                # Acceso a los scripts SQL si el servidor los necesita
+    depends_on:
+      mysql:
+        condition: service_healthy    # Solo arranca cuando MySQL está saludable
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql                 # Nombre del servicio definido arriba
+    secrets:
+      - mysql_user
+      - mysql_password
+      - mysql_database
+    networks:
+      - app_network
+    command: sh -c "npm install && node server.js" # Instala dependencias y arranca el servidor
+
+  # Servicio de Servidor Web y Proxy Inverso (Nginx)
+  nginx:
+    image: nginx:latest
+    container_name: nginx_web
+    restart: always
+    ports:
+      - "80:80"                       # Punto de entrada principal (HTTP)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro # Configuración de Nginx
+      - ./paginas:/usr/share/nginx/html:ro         # Sirve los archivos estáticos (HTML/JS/CSS)
+    depends_on:
+      - nodejs
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mysql_data: # Volumen persistente para la base de datos
+
+secrets:
+  mysql_root_password:
+    file: ./secrets/mysql_root_password
+
+  mysql_user:
+    file: ./secrets/mysql_user
+
+  mysql_password:
+    file: ./secrets/mysql_password
+
+  mysql_database:
+    file: ./secrets/mysql_database
+
+  admin_password:
+    file: ./secrets/admin_password

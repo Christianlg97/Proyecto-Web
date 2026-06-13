@@ -1,0 +1,13 @@
+mysql/02-insertar.sql
+users/
+nodejs/package-lock.json
+nodejs/node_modules
+.git/
+
+# Ignorar archivos grandes y binarios por seguridad para el IDE
+*.iso
+*.zip
+*.rar
+*.tar.gz
+*.bin
+*.img

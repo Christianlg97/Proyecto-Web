@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es" id="htmlTag">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="title">Sistema de Gestión de Archivos</title>
+    <link rel="stylesheet" href="gestorarchivos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- ============================================================
+         BARRA DE NAVEGACIÓN Y CONTROLES
+         ============================================================ -->
+    <div class="controls-bar">
+        <button class="control-btn" onclick="window.location.href='apps.html'" title="Volver a las aplicaciones" data-i18n-title="backToApp">
+            <i class="fas fa-arrow-left"></i>
+            <span data-i18n="backToApp">Volver</span>
+        </button>
+        <div class="dropdown-menu" id="settingsDropdown">
+            <button class="control-btn dropdown-toggle" id="settingsBtn" title="Configuración"
+                data-i18n-title="settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="dropdown-content" id="dropdownContent">
+                <div class="dropdown-section">
+                    <span class="dropdown-label" data-i18n="appearance">Apariencia</span>
+                    <button class="dropdown-item" id="themeEditorBtn">
+                        <i class="fas fa-palette"></i>
+                        <span data-i18n="themeEditor">Temas</span>
+                    </button>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-section">
+                    <span class="dropdown-label" data-i18n="language">Idioma</span>
+                    <button class="dropdown-item" id="languageToggle">
+                        <i class="fas fa-language"></i>
+                        <span>Español / English</span>
+                    </button>
+                </div>
+                <div class="dropdown-divider logout-divider" style="display: none;"></div>
+                <div class="dropdown-section logout-section" style="display: none;">
+                    <button class="dropdown-item logout-item" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span data-i18n="logout">Cerrar Sesión</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODALES DE LA APLICACIÓN
+         ============================================================ -->
+
+    <!-- Modal Editor de Temas -->
+    <div id="themeEditorModal" class="modal">
+        <div class="modal-content theme-editor-modal">
+            <span class="close-modal" onclick="closeThemeEditor()">&times;</span>
+            <h3><i class="fas fa-palette"></i> <span data-i18n="themeEditorTitle">Editor de Temas</span></h3>
+            <div class="theme-preview-container">
+                <div class="theme-preview" id="themePreview">
+                    <div class="preview-header" data-i18n="preview">Vista</div>
+                    <div class="preview-body">
+                        <div class="preview-btn" data-i18n="save">Guardar</div>
+                        <div class="preview-input" data-i18n="newNamePlaceholder">Nombre...</div>
+                        <div class="preview-card" data-i18n="themeEditor">Temas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="theme-colors-grid">
+                <div class="color-picker-group">
+                    <label data-i18n="primaryColor">Color Primario:</label>
+                    <input type="color" id="primaryColorPicker" value="#4361ee">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="secondaryColor">Color Secundario:</label>
+                    <input type="color" id="secondaryColorPicker" value="#4cc9f0">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="backgroundColor">Fondo:</label>
+                    <input type="color" id="backgroundColorPicker" value="#f8fafc">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="textColor">Texto:</label>
+                    <input type="color" id="textColorPicker" value="#1e293b">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="accentColor">Acento:</label>
+                    <input type="color" id="accentColorPicker" value="#7209b7">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="successColor">Éxito:</label>
+                    <input type="color" id="successColorPicker" value="#06d6a0">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="dangerColor">Error:</label>
+                    <input type="color" id="dangerColorPicker" value="#ef476f">
+                </div>
+                <div class="color-picker-group">
+                    <label data-i18n="warningColor">Advertencia:</label>
+                    <input type="color" id="warningColorPicker" value="#ffd166">
+                </div>
+            </div>
+            <div class="theme-presets">
+                <h4 data-i18n="themePresets">Temas Predefinidos:</h4>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPreset('default')"
+                        style="background: linear-gradient(135deg, #4361ee, #7209b7);">Default</button>
+                    <button class="preset-btn" onclick="applyPreset('ocean')"
+                        style="background: linear-gradient(135deg, #0077b6, #00b4d8);">Ocean</button>
+                    <button class="preset-btn" onclick="applyPreset('forest')"
+                        style="background: linear-gradient(135deg, #2d6a4f, #40916c);">Forest</button>
+                    <button class="preset-btn" onclick="applyPreset('sunset')"
+                        style="background: linear-gradient(135deg, #ff6b35, #f7c59f);">Sunset</button>
+                    <button class="preset-btn" onclick="applyPreset('midnight')"
+                        style="background: linear-gradient(135deg, #1a1a2e, #16213e);">Midnight</button>
+                    <button class="preset-btn" onclick="applyPreset('dark')"
+                        style="background: linear-gradient(135deg, #0f172a, #3f37c9);">Dark</button>
+                    <button class="preset-btn" onclick="applyPreset('candy')"
+                        style="background: linear-gradient(135deg, #ff9a9e, #fecfef);">Candy</button>
+                </div>
+            </div>
+            <div class="theme-actions">
+                <button class="modal-btn cancel" onclick="resetTheme()" data-i18n="resetTheme">Restablecer</button>
+                <button class="modal-btn save" onclick="saveTheme()" data-i18n="saveTheme">Guardar Tema</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para renombrar archivos/carpetas -->
+    <div id="renameModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 data-i18n="renameTitle">Renombrar Elemento</h3>
+            <div class="form-group">
+                <label for="newFileName" data-i18n="newName">Nuevo nombre:</label>
+                <input type="text" id="newFileName" placeholder="Ingresa el nuevo nombre"
+                    data-i18n-placeholder="newNamePlaceholder">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelRename" data-i18n="cancel">Cancelar</button>
+                <button class="modal-btn save" id="saveRename" data-i18n="save">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para compartir -->
+    <div id="shareModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" id="closeShareModal">&times;</span>
+            <h3 data-i18n="shareTitle">Compartir archivo</h3>
+            <p id="shareFileNameDisplay"></p>
+            <div class="form-group">
+                <label for="shareExpiration" data-i18n="expiration">Expiración:</label>
+                <select id="shareExpiration" class="form-control">
+                    <option value="never" data-i18n="never">Nunca</option>
+                    <option value="1h" data-i18n="oneHour">1 hora</option>
+                    <option value="1d" data-i18n="oneDay">1 día</option>
+                    <option value="7d" data-i18n="sevenDays">7 días</option>
+                </select>
+            </div>
+            <div class="form-group" id="shareUrlContainer" style="display: none;">
+                <label data-i18n="shareUrl">Enlace público:</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="shareUrlInput" class="form-control" readonly>
+                    <button id="copyShareUrl" class="action-btn" style="width: auto;"><i
+                            class="fas fa-copy"></i></button>
+                </div>
+                <small id="shareExpiryInfo"></small>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelShare" data-i18n="close">Cerrar</button>
+                <button class="modal-btn save" id="generateShareLink" data-i18n="generateLink">Generar enlace</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear carpeta -->
+    <div id="mkdirModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeMkdirModal">&times;</span>
+            <h3 data-i18n="mkdirTitle">Crear Nueva Carpeta</h3>
+            <div class="form-group">
+                <label for="folderName" data-i18n="folderName">Nombre de la carpeta:</label>
+                <input type="text" id="folderName" placeholder="ej: Documentos"
+                    data-i18n-placeholder="folderNamePlaceholder">
+                <small data-i18n="folderNameHint">Puedes usar rutas anidadas (ej: fotos/2025).</small>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelMkdir" data-i18n="cancel">Cancelar</button>
+                <button class="modal-btn save" id="saveMkdir" data-i18n="create">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mover archivo con navegador de carpetas -->
+    <div id="moveBrowserModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" id="closeMoveBrowserModal">&times;</span>
+            <h3 data-i18n="moveTitle">Mover Archivo</h3>
+            <p id="moveBrowserFileNameDisplay"></p>
+            <div class="path-bar" id="moveCurrentPath"><i class="fas fa-folder-open"></i> <span
+                    data-i18n="currentPath">Ruta</span>: /</div>
+            <div class="folder-list" id="moveFolderList"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--input-border); border-radius: 4px; padding: 10px; margin: 10px 0;">
+                <!-- Las carpetas se cargarán aquí -->
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="modal-btn cancel" id="cancelMoveBrowser" data-i18n="cancel">Cancelar</button>
+                <button class="modal-btn save" id="saveMoveBrowser" data-i18n="move">Mover aquí</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para enviar archivos a otro usuario -->
+    <div id="sendModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" id="closeSendModal">&times;</span>
+            <h3 data-i18n="sendTitle">Enviar archivos</h3>
+
+            <div class="form-group">
+                <label data-i18n="selectedFiles">Archivos seleccionados:</label>
+                <div id="sendFileList"
+                    style="max-height: 200px; overflow-y: auto; border: 1px solid var(--input-border); border-radius: 4px; padding: 8px; margin-bottom: 15px;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="destinationUser" data-i18n="selectDestinationUser">Usuario destino:</label>
+                <select id="destinationUser" class="form-control" required>
+                    <option value="" data-i18n="selectUser">Seleccionar usuario...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="destinationFolderInput" data-i18n="destinationFolder">Carpeta destino (opcional):</label>
+                <input type="text" id="destinationFolderInput" class="form-control" placeholder="Recibidos"
+                    data-i18n-placeholder="received">
+                <small data-i18n="destinationFolderHint">Si se deja vacío, se usará "Recibidos". Se creará
+                    automáticamente si no existe.</small>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelSend" data-i18n="cancel">Cancelar</button>
+                <button class="modal-btn save" id="confirmSend" data-i18n="send">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         CONTENEDOR PRINCIPAL (GESTOR DE ARCHIVOS)
+         ============================================================ -->
+
+    <!-- Contenedor principal del gestor de archivos -->
+    <div class="container" id="uploadContainer">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <i class="fas fa-cloud-upload-alt theme-icon-big"></i>
+        </div>
+        <h2><i class="fas fa-upload" style="margin-right: 10px;"></i><span data-i18n="uploadTitle">Subir Archivo</span>
+        </h2>
+        <div id="userInfo">
+            <i class="fas fa-user-circle" style="margin-right: 8px;"></i>
+        </div>
+
+        <!-- Dashboard de Estadísticas del Usuario -->
+        <div id="userDashboard" class="dashboard-container" style="display: none;">
+            <div class="dashboard-card">
+                <h4 data-i18n="storageUsage">Uso de Disco</h4>
+                <div class="chart-wrapper">
+                    <canvas id="storageChart"></canvas>
+                </div>
+                <p id="storageText" class="dashboard-text">--</p>
+            </div>
+            <div class="dashboard-card">
+                <h4 data-i18n="bandwidthUsage">Ancho de Banda</h4>
+                <div class="chart-wrapper">
+                    <canvas id="bandwidthChart"></canvas>
+                </div>
+                <p id="bandwidthText" class="dashboard-text">--</p>
+            </div>
+            <div class="dashboard-card">
+                <h4 data-i18n="maxFileSize">Archivo Máximo</h4>
+                <div class="chart-wrapper">
+                    <canvas id="maxFileChart"></canvas>
+                </div>
+                <p id="maxFileText" class="dashboard-text">--</p>
+            </div>
+            <div class="dashboard-card">
+                <h4>Descargas</h4>
+                <div class="chart-wrapper">
+                    <canvas id="downloadsChart"></canvas>
+                </div>
+                <p id="downloadsText" class="dashboard-text">0</p>
+            </div>
+        </div>
+
+        <!-- Selector de usuario (solo admin) -->
+        <div id="adminBrowseBar" class="filters-bar" style="display:none; margin-top: 10px;">
+            <div class="filters-left" style="align-items: center;">
+                <div class="filter-group" style="min-width: 260px;">
+                    <label style="margin-bottom: 6px; text-transform:none; letter-spacing: normal;"
+                        data-i18n="viewFilesOf">Ver archivos de</label>
+                    <select id="adminBrowseUserSelect" class="filter-select">
+                        <option value="" data-i18n="meAdmin">Yo (admin)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filters-right" style="align-items: center;">
+
+            </div>
+        </div>
+
+        <!-- Zona de subida: arrastrar o hacer clic para seleccionar (subida automática) -->
+        <div id="uploadDropZone" class="upload-drop-zone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <strong>Arrastra tus archivos aquí o haz clic para seleccionar</strong>
+            <span><i class="fas fa-info-circle"></i> <span data-i18n="maxSize">Máximo 10000MB</span></span>
+        </div>
+
+        <!-- Input file oculto para selección mediante clic -->
+        <input type="file" id="hiddenFileInput" style="display: none;" multiple>
+
+        <!-- Barra de filtros y acciones -->
+        <div class="filters-bar">
+            <div class="filters-left">
+                <div class="filter-group">
+                    <select id="filterType" class="filter-select">
+                        <option value="all" data-i18n="filterAll">Todos</option>
+                        <option value="folders" data-i18n="filterFolders">Solo carpetas</option>
+                        <option value="files" data-i18n="filterFiles">Solo archivos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" id="extensionFilterGroup" style="display: none;">
+                    <select id="filterExtension" class="filter-select">
+                        <option value="all" data-i18n="allExtensions">Todas las extensiones</option>
+                        <option value="images" data-i18n="images">Imágenes</option>
+                        <option value="videos" data-i18n="videos">Videos</option>
+                        <option value="audio" data-i18n="audio">Audio</option>
+                        <option value="documents" data-i18n="documents">Documentos</option>
+                        <option value="archives" data-i18n="archives">Comprimidos</option>
+                        <option value="code" data-i18n="code">Código</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filters-right">
+                <button id="clearFiltersBtn" class="filter-btn clear" style="display: none;">
+                    <span data-i18n="clearFilters">Limpiar filtros</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de acciones -->
+        <div class="action-bar manager-toolbar">
+            <div id="selectedActions" class="selected-actions" style="display: none;">
+                <button id="sendButton" class="action-btn success file-action" title="Enviar archivos seleccionados">
+                    <i class="fas fa-file-export"></i> <span data-i18n="send">Enviar</span> (<span
+                        id="selectedCount">0</span>)
+                </button>
+                <button id="bulkMoveButton" class="action-btn file-action" title="Mover selección">
+                    <i class="fas fa-folder-tree"></i> <span data-i18n="move">Mover</span>
+                </button>
+                <button id="bulkDownloadButton" class="action-btn file-action" title="Descargar selección">
+                    <i class="fas fa-file-zipper"></i> <span data-i18n="downloadZip">Descargar como ZIP</span>
+                </button>
+                <button id="bulkDeleteButton" class="action-btn danger file-action" title="Eliminar selección">
+                    <i class="fas fa-trash"></i> <span data-i18n="delete">Eliminar</span>
+                </button>
+            </div>
+            <button id="createFolderBtn" class="action-btn primary">
+                <i class="fas fa-folder-plus"></i> <span data-i18n="createFolder">Crear Carpeta</span>
+            </button>
+            <button id="refreshFilesBtn" class="action-btn" onclick="refreshFileManager()">
+                <i class="fas fa-sync-alt"></i> Refrescar
+            </button>
+            <div class="filter-menu">
+                <button id="filterMenuBtn" class="action-btn icon-only" type="button" title="Filtrar">
+                    <i class="fas fa-filter"></i>
+                </button>
+                <div id="filterMenuContent" class="filter-menu-content">
+                    <button class="filter-option active" type="button" data-filter-value="all" data-i18n="filterAll">
+                        Ninguno
+                    </button>
+                    <button class="filter-option" type="button" data-filter-value="files" data-i18n="filterFiles">
+                        Archivos
+                    </button>
+                    <button class="filter-option" type="button" data-filter-value="folders" data-i18n="filterFolders">
+                        Carpetas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buscador -->
+        <div id="searchContainer" class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Buscar archivos por nombre..."
+                data-i18n-placeholder="searchPlaceholder">
+            <div id="searchStats" class="search-stats"></div>
+        </div>
+
+        <!-- Contenedor de mensajes -->
+        <div id="uploadMessage"></div>
+
+        <!-- Lista de archivos -->
+        <div id="fileList" style="margin-top: 20px;"></div>
+
+        <!-- Botón de logout -->
+        <button onclick="logout()" class="logout-btn">
+            <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i><span data-i18n="logout">Cerrar Sesión</span>
+        </button>
+    </div>
+
+    <!-- Script de control de sesión inicial para redirigir a login si es necesario -->
+    <script>
+        (function () {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                window.location.href = 'login.html';
+                return;
+            }
+            try {
+                const user = JSON.parse(userStr);
+                if (!user || !user.expires || Date.now() > user.expires) {
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+
+    <script src="gestorarchivos.js"></script>
+</body>
+
+</html>
