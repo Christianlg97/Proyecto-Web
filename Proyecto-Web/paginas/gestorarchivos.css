@@ -777,28 +777,31 @@ button:active {
     display: flex !important;
     justify-content: flex-end;
     align-items: center;
-    flex: 0 1 260px;
 }
 
 .admin-browse-inline .filters-left {
+    display: flex !important;
+    align-items: center !important;
     justify-content: flex-end;
     width: 100%;
     gap: 0;
 }
 
 .admin-browse-inline .filter-group {
-    min-width: 220px !important;
-    max-width: 260px;
     margin-bottom: 0;
     position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
 }
 
 .admin-browse-inline .filter-group label {
-    position: absolute !important;
-    bottom: 100% !important;
-    left: 0 !important;
-    margin-bottom: 6px !important;
+    position: static !important;
+    margin-bottom: 0 !important;
     white-space: nowrap !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
 }
 
 .admin-browse-inline .filter-select {
@@ -808,6 +811,8 @@ button:active {
     border: 1px solid var(--border-color) !important;
     border-radius: 14px !important;
     font-size: 14px !important;
+    width: auto !important;
+    min-width: 160px !important;
 }
 
 .search-stats {
@@ -1912,4 +1917,35 @@ input, select, button, .control-btn, .action-btn, .tab-btn {
 
 .file-row:hover .file-icon-anim {
     animation: coolIconAnim 0.5s ease-out forwards;
+}
+
+/* ============================================================
+   WIDGET DE PROGRESO DE SUBIDA MULTI-LÍNEA
+   ============================================================ */
+.upload-progress-list {
+    margin-top: 10px;
+    transition: var(--transition);
+}
+
+.upload-progress-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
+}
+
+.upload-progress-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-light);
+}
+
+.upload-progress-bar-fill {
+    transition: width 0.2s ease, background-color 0.3s ease;
+}
+
+.upload-progress-bar-fill.success {
+    background: linear-gradient(135deg, var(--success) 0%, #05b38a 100%) !important;
+}
+
+.upload-progress-bar-fill.error {
+    background: linear-gradient(135deg, var(--danger) 0%, #d9385c 100%) !important;
 }

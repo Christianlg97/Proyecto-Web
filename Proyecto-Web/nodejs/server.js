@@ -426,6 +426,8 @@ async function startServer() {
             }
 
             // 4. Se aprueba y asigna el candidato final seguro
+            // Guardar la ruta final en el request para el middleware de limpieza
+            req._uploadFilePath = path.join(resolvedTarget, candidate);
             cb(null, candidate);
         }
     });
@@ -892,9 +894,49 @@ async function startServer() {
     };
 
     /**
+     * Middleware para limpiar archivos parciales cuando el cliente cancela la subida.
+     *
+     * Usa req.complete (nativo de Node.js) para detectar si la petición fue
+     * recibida completamente. Si el cliente cancela (xhr.abort()), req.complete
+     * es false cuando 'close' se dispara, y el archivo parcial se elimina.
+     * Si la subida fue exitosa, req.complete ya es true y no se toca nada.
+     */
+    function cleanUpPartialUpload(req, res, next) {
+        req.on('close', () => {
+            // req.complete es true solo cuando el cuerpo del request se recibió completo.
+            // Si es false, el cliente abortó antes de terminar de enviar los datos.
+            if (!req.complete) {
+                // Esperar 300ms para que Multer cierre el stream de escritura
+                setTimeout(() => {
+                    const filePath = req._uploadFilePath;
+                    if (filePath) {
+                        const tryDelete = (attempt) => {
+                            if (fs.existsSync(filePath)) {
+                                try {
+                                    fs.unlinkSync(filePath);
+                                    console.log(`[CleanUp] Archivo parcial eliminado: ${filePath}`);
+                                } catch (e) {
+                                    if (e.code === 'EBUSY' && attempt < 3) {
+                                        setTimeout(() => tryDelete(attempt + 1), 500);
+                                    } else {
+                                        console.warn(`[CleanUp] No se pudo eliminar archivo parcial (${e.code}): ${filePath}`);
+                                    }
+                                }
+                            }
+                        };
+                        tryDelete(1);
+                    }
+                }, 300);
+            }
+        });
+
+        next();
+    }
+
+    /**
      * Subir archivo a la carpeta del usuario
      */
-    app.post('/api/upload/:username', checkUploadQuota, upload.single('file'), async (req, res) => {
+    app.post('/api/upload/:username', checkUploadQuota, cleanUpPartialUpload, upload.single('file'), async (req, res) => {
         try {
             const user = req.userContext;
             const file = req.file;

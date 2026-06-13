@@ -187,7 +187,8 @@ const translations = {
         path: 'Ruta',
         browse: 'Examinar...',
         noFileSelected: 'No se ha seleccionado ningún archivo',
-        fileType: 'Tipo'
+        fileType: 'Tipo',
+        cancelUpload: 'Cancelar Subida'
     },
     en: {
         title: 'File Management System',
@@ -365,7 +366,8 @@ const translations = {
         path: 'Path',
         browse: 'Browse...',
         noFileSelected: 'No file selected',
-        fileType: 'Type'
+        fileType: 'Type',
+        cancelUpload: 'Cancel Upload'
     }
 };
 
@@ -2161,10 +2163,8 @@ async function logout() {
 // SUBIDA AUTOMÁTICA POR ARRASTRE O CLIC (sin botones)
 // ============================================================
 
-let uploadQueue = [];
-let isUploading = false;
-let totalUploadTasks = 0;
-let completedUploadTasks = 0;
+let activeUploadTasks = [];
+let uploadFinishTimeoutId = null;
 
 function getUploadPathForTask(taskRelativePath) {
     const parts = taskRelativePath.split('/');
@@ -2177,66 +2177,275 @@ function getUploadPathForTask(taskRelativePath) {
     }
 }
 
-function updateQueueProgressUI(percentCurrentFile, speedText, currentFileName) {
+function getFileIconClass(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext)) return { icon: 'fa-file-image', color: 'var(--primary)' };
+    if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv'].includes(ext)) return { icon: 'fa-file-video', color: 'var(--accent)' };
+    if (['mp3', 'wav', 'flac', 'aac', 'm4a'].includes(ext)) return { icon: 'fa-file-audio', color: '#06d6a0' };
+    if (ext === 'pdf') return { icon: 'fa-file-pdf', color: '#ef476f' };
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return { icon: 'fa-file-archive', color: '#ffd166' };
+    if (['js', 'html', 'css', 'json', 'py', 'java', 'cpp', 'c', 'php', 'xml', 'yaml'].includes(ext)) return { icon: 'fa-file-code', color: '#8b5cf6' };
+    return { icon: 'fa-file', color: 'var(--text-secondary)' };
+}
+
+function renderUploadProgressContainer() {
     const uploadMessage = document.getElementById('uploadMessage');
     if (!uploadMessage) return;
     
-    const percentOverall = totalUploadTasks > 0 
-        ? Math.round(((completedUploadTasks + (percentCurrentFile / 100)) / totalUploadTasks) * 100)
-        : 0;
-        
     uploadMessage.className = 'info-message';
-    uploadMessage.innerHTML = `
+    uploadMessage.style.display = 'block';
+    
+    let html = `
         <div id="contenedor-barra-progreso" style="text-align: left; width: 100%; padding: 15px 0; font-family: inherit;">
             <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                <span id="overallUploadTitle" style="display: inline-flex; align-items: center; gap: 8px;">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 20px;"></i>
-                    <span>${translations[currentLanguage].uploading} ${completedUploadTasks + 1} ${translations[currentLanguage].of} ${totalUploadTasks}...</span>
+                    <span>Subiendo archivos...</span>
                 </span>
-                <span>${percentOverall}%</span>
             </div>
-            <div style="width: 100%; background-color: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                <div id="uploadProgressBar" style="width: ${percentOverall}%; height: 100%; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); transition: width 0.1s ease;"></div>
+            <div style="width: 100%; background-color: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                <div id="overallUploadProgressBar" style="width: 0%; height: 100%; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); transition: width 0.1s ease;"></div>
             </div>
-            <div style="font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; gap: 10px;">
-                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;" title="${escapeHTML(currentFileName)}">${escapeHTML(currentFileName)} (${percentCurrentFile.toFixed(1)}%)</span>
-                <span>${speedText}</span>
+            
+            <div class="upload-progress-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;">
+    `;
+    
+    activeUploadTasks.forEach(task => {
+        const fileIcon = getFileIconClass(task.file.name);
+        
+        let fileDisplayName = task.relativePath;
+        let folderPrefix = '';
+        if (task.relativePath.includes('/')) {
+            const parts = task.relativePath.split('/');
+            const name = parts.pop();
+            const folder = parts.join('/');
+            folderPrefix = `<i class="fas fa-folder" style="color: #ffc107; margin-right: 4px;" title="Carpeta: ${escapeHTML(folder)}"></i> <span style="color: var(--text-muted); font-size: 0.85em;">${escapeHTML(folder)}/</span>`;
+            fileDisplayName = name;
+        }
+        
+        if (task.isFolder) {
+            folderPrefix = `<i class="fas fa-folder" style="color: #ffc107; margin-right: 4px;"></i>`;
+            fileDisplayName = task.relativePath;
+        }
+        
+        html += `
+            <div id="item_${task.id}" class="upload-progress-item" style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg);">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; font-weight: 500;" title="${escapeHTML(task.relativePath)}">
+                        ${folderPrefix}${!task.isFolder ? `<i class="fas ${fileIcon.icon}" style="color: ${fileIcon.color}; margin-right: 4px;"></i>` : ''}${escapeHTML(fileDisplayName)}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
+                        <span class="upload-speed-text">${task.speedText}</span>
+                        <span class="upload-percent-text" style="font-weight: 600;">0%</span>
+                        <i class="upload-item-status-icon fas fa-clock" style="color: var(--text-muted);"></i>
+                    </span>
+                </div>
+                <div style="width: 100%; background-color: var(--border-color); height: 4px; border-radius: 2px; overflow: hidden;">
+                    <div class="upload-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); transition: width 0.2s ease;"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
             </div>
         </div>
     `;
+    
+    uploadMessage.innerHTML = html;
 }
 
-async function processNextUpload() {
-    if (uploadQueue.length === 0) {
-        isUploading = false;
-        totalUploadTasks = 0;
-        completedUploadTasks = 0;
+function updateTaskUI(task) {
+    const itemEl = document.getElementById(`item_${task.id}`);
+    if (!itemEl) return;
+    
+    const fillEl = itemEl.querySelector('.upload-progress-bar-fill');
+    const percentEl = itemEl.querySelector('.upload-percent-text');
+    const speedEl = itemEl.querySelector('.upload-speed-text');
+    const iconEl = itemEl.querySelector('.upload-item-status-icon');
+    
+    if (fillEl) {
+        fillEl.style.width = `${task.percent}%`;
+        fillEl.className = 'upload-progress-bar-fill';
+        if (task.status === 'success') fillEl.classList.add('success');
+        if (task.status === 'error') fillEl.classList.add('error');
+    }
+    
+    if (percentEl) {
+        if (task.status === 'success') {
+            percentEl.innerHTML = `<span style="color: var(--success); font-weight: bold;"><i class="fas fa-check-circle"></i> ${task.isFolder ? 'Creada' : 'Completado'}</span>`;
+        } else if (task.status === 'error') {
+            percentEl.innerHTML = `<span style="color: var(--danger); font-weight: bold;"><i class="fas fa-exclamation-circle"></i> Error</span>`;
+        } else {
+            percentEl.textContent = `${Math.round(task.percent)}%`;
+        }
+    }
+    
+    if (speedEl) {
+        if (task.status === 'success' || task.status === 'error') {
+            speedEl.textContent = task.status === 'error' ? task.errorMsg : '';
+        } else {
+            speedEl.textContent = task.speedText;
+        }
+    }
+    
+    if (iconEl) {
+        if (task.status === 'success') {
+            iconEl.className = 'upload-item-status-icon fas fa-check-circle';
+            iconEl.style.color = 'var(--success)';
+        } else if (task.status === 'error') {
+            iconEl.className = 'upload-item-status-icon fas fa-exclamation-circle';
+            iconEl.style.color = 'var(--danger)';
+        } else if (task.status === 'uploading') {
+            iconEl.className = 'upload-item-status-icon fas fa-spinner fa-spin';
+            iconEl.style.color = 'var(--primary)';
+        } else {
+            iconEl.className = 'upload-item-status-icon fas fa-clock';
+            iconEl.style.color = 'var(--text-muted)';
+        }
+    }
+}
+
+function updateOverallProgressUI() {
+    const uploadMessage = document.getElementById('uploadMessage');
+    if (!uploadMessage) return;
+    
+    const tasks = activeUploadTasks;
+    if (tasks.length === 0) return;
+    
+    const completedCount = tasks.filter(t => t.status === 'success' || t.status === 'error').length;
+    const totalCount = tasks.length;
+    
+    const totalPercent = tasks.reduce((sum, t) => sum + t.percent, 0);
+    const overallPercent = Math.round(totalPercent / totalCount);
+    
+    const overallBar = document.getElementById('overallUploadProgressBar');
+    if (overallBar) {
+        overallBar.style.width = `${overallPercent}%`;
+    }
+    
+    const overallTitle = document.getElementById('overallUploadTitle');
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    const dropZone = document.getElementById('uploadDropZone');
+    
+    if (completedCount === totalCount) {
+        if (cancelBtn) cancelBtn.style.display = 'none';
         
-        showMessage('uploadMessage', `<i class="fas fa-check-circle"></i> ${translations[currentLanguage].uploadSuccess}`, 'success');
-        loadFileList();
+        if (overallTitle) {
+            const hasErrors = tasks.some(t => t.status === 'error');
+            const isEs = currentLanguage === 'es';
+            if (hasErrors) {
+                overallTitle.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> ${isEs ? 'Subida finalizada con algunos errores' : 'Upload finished with some errors'} (${completedCount}/${totalCount})`;
+            } else {
+                overallTitle.innerHTML = `<i class="fas fa-check-circle" style="color: var(--success);"></i> ${isEs ? '¡Todos los archivos subidos exitosamente!' : 'All files uploaded successfully!'} (${completedCount}/${totalCount})`;
+            }
+        }
+        
+        if (!uploadFinishTimeoutId) {
+            loadFileList();
+            uploadFinishTimeoutId = setTimeout(() => {
+                if (uploadMessage) {
+                    uploadMessage.style.display = 'none';
+                    uploadMessage.innerHTML = '';
+                }
+                if (dropZone) {
+                    dropZone.style.display = 'flex';
+                }
+                uploadFinishTimeoutId = null;
+                refreshFileManager();
+            }, 5000);
+        }
+    } else {
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        if (dropZone) dropZone.style.display = 'none';
+        
+        if (overallTitle) {
+            const isEs = currentLanguage === 'es';
+            overallTitle.innerHTML = `<i class="fas fa-cloud-upload-alt fa-spin"></i> ${isEs ? 'Subiendo' : 'Uploading'} ${completedCount} ${isEs ? 'de' : 'of'} ${totalCount} ${isEs ? 'archivos' : 'files'}... (${overallPercent}%)`;
+        }
+    }
+}
+
+function cancelAllUploads() {
+    const tasksToCancel = activeUploadTasks.filter(t => t.status === 'uploading' || t.status === 'pending');
+    if (tasksToCancel.length === 0) return;
+    
+    tasksToCancel.forEach(task => {
+        if (task.xhr) {
+            task.xhr.onload = null;
+            task.xhr.onerror = null;
+            if (task.xhr.upload) {
+                task.xhr.upload.onprogress = null;
+            }
+            try {
+                task.xhr.abort();
+            } catch (e) {
+                console.warn('Error abortando XHR:', e);
+            }
+            task.xhr = null;
+        }
+        
+        task.status = 'error';
+        task.errorMsg = currentLanguage === 'es' ? 'Cancelado' : 'Cancelled';
+        updateTaskUI(task);
+    });
+    
+    updateOverallProgressUI();
+}
+
+function uploadTask(task, onDoneCallback) {
+    const user = getUserSession();
+    if (!user) {
+        task.status = 'error';
+        task.errorMsg = 'Sesión expirada';
+        updateTaskUI(task);
+        updateOverallProgressUI();
+        onDoneCallback && onDoneCallback();
         return;
     }
     
-    const task = uploadQueue.shift();
-    const user = getUserSession();
-    if (!user) {
-        uploadQueue = [];
-        isUploading = false;
+    task.status = 'uploading';
+    updateTaskUI(task);
+    
+    if (task.isFolder) {
+        const targetFolderName = currentPath ? currentPath + '/' + task.relativePath : task.relativePath;
+        fetch(`${API_URL}/mkdir/${user.username}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: user.token, folderName: targetFolderName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                task.status = 'success';
+                task.percent = 100;
+                task.speedText = '';
+            } else {
+                task.status = 'error';
+                task.errorMsg = data.message || 'Error creando carpeta';
+            }
+            updateTaskUI(task);
+            updateOverallProgressUI();
+            onDoneCallback && onDoneCallback();
+        })
+        .catch(() => {
+            task.status = 'error';
+            task.errorMsg = 'Error de conexión';
+            updateTaskUI(task);
+            updateOverallProgressUI();
+            onDoneCallback && onDoneCallback();
+        });
         return;
     }
     
     const targetFolder = getUploadPathForTask(task.relativePath);
-    
     const formData = new FormData();
     formData.append('file', task.file);
     formData.append('token', user.token);
     
-    let uploadStartTime = Date.now();
-    let lastLoaded = 0;
-    let lastTime = uploadStartTime;
-    let speedText = '0 B/s';
-    
     const xhr = new XMLHttpRequest();
+    task.xhr = xhr;
+    
     let uploadUrl = `${API_URL}/upload/${user.username}?token=${user.token}`;
     if (targetFolder) {
         uploadUrl += `&path=${encodeURIComponent(targetFolder)}`;
@@ -2244,9 +2453,15 @@ async function processNextUpload() {
     
     xhr.open('POST', uploadUrl, true);
     
+    let uploadStartTime = Date.now();
+    let lastLoaded = 0;
+    let lastTime = uploadStartTime;
+    
     xhr.upload.onprogress = function (event) {
         if (event.lengthComputable) {
-            const percentComplete = Math.max(0, Math.min(100, (event.loaded / event.total) * 100));
+            task.percent = Math.max(0, Math.min(100, (event.loaded / event.total) * 100));
+            task.uploadedBytes = event.loaded;
+            
             const currentTime = Date.now();
             const timeDiff = (currentTime - lastTime) / 1000;
             
@@ -2255,18 +2470,19 @@ async function processNextUpload() {
                 const speedBps = bytesDiff / timeDiff;
                 
                 if (speedBps > 1024 * 1024) {
-                    speedText = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
+                    task.speedText = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
                 } else if (speedBps > 1024) {
-                    speedText = `${(speedBps / 1024).toFixed(2)} KB/s`;
+                    task.speedText = `${(speedBps / 1024).toFixed(2)} KB/s`;
                 } else {
-                    speedText = `${Math.round(speedBps)} B/s`;
+                    task.speedText = `${Math.round(speedBps)} B/s`;
                 }
                 
                 lastTime = currentTime;
                 lastLoaded = event.loaded;
             }
             
-            updateQueueProgressUI(percentComplete, speedText, task.relativePath);
+            updateTaskUI(task);
+            updateOverallProgressUI();
         }
     };
     
@@ -2275,17 +2491,16 @@ async function processNextUpload() {
             try {
                 const data = JSON.parse(xhr.responseText);
                 if (data.success) {
-                    completedUploadTasks++;
-                    processNextUpload();
+                    task.status = 'success';
+                    task.percent = 100;
+                    task.speedText = '';
                 } else {
-                    showMessage('uploadMessage', `<i class="fas fa-exclamation-circle"></i> Error: ${escapeHTML(data.message || 'error')}`, 'error');
-                    isUploading = false;
-                    uploadQueue = [];
+                    task.status = 'error';
+                    task.errorMsg = data.message || 'Error en subida';
                 }
             } catch (e) {
-                showMessage('uploadMessage', `<i class="fas fa-exclamation-circle"></i> Error parseando respuesta`, 'error');
-                isUploading = false;
-                uploadQueue = [];
+                task.status = 'error';
+                task.errorMsg = 'Error parseando respuesta';
             }
         } else {
             let errorMsg = 'Error del servidor';
@@ -2293,16 +2508,22 @@ async function processNextUpload() {
                 const data = JSON.parse(xhr.responseText);
                 if (data.message) errorMsg = data.message;
             } catch(e) {}
-            showMessage('uploadMessage', `<i class="fas fa-exclamation-circle"></i> Error al subir ${escapeHTML(task.file.name)}: ${escapeHTML(errorMsg)}`, 'error');
-            isUploading = false;
-            uploadQueue = [];
+            task.status = 'error';
+            task.errorMsg = errorMsg;
         }
+        task.xhr = null;
+        updateTaskUI(task);
+        updateOverallProgressUI();
+        onDoneCallback && onDoneCallback();
     };
     
     xhr.onerror = function () {
-        showMessage('uploadMessage', `<i class="fas fa-exclamation-triangle"></i> ${translations[currentLanguage].connectionError}`, 'error');
-        isUploading = false;
-        uploadQueue = [];
+        task.status = 'error';
+        task.errorMsg = translations[currentLanguage].connectionError || 'Error de conexión';
+        task.xhr = null;
+        updateTaskUI(task);
+        updateOverallProgressUI();
+        onDoneCallback && onDoneCallback();
     };
     
     xhr.send(formData);
@@ -2318,13 +2539,13 @@ async function enqueueFilesForUpload(fileTasks) {
     const validTasks = [];
     
     for (const task of fileTasks) {
-        if (task.file.size > userQuotaInfo.max_file_size_bytes && userQuotaInfo.max_file_size_bytes > 0) {
+        if (!task.isFolder && task.file.size > userQuotaInfo.max_file_size_bytes && userQuotaInfo.max_file_size_bytes > 0) {
             const maxSizeText = getFormattedMaxFileSize();
             const fileSizeText = formatBytesShort(task.file.size);
             alert(`El archivo ${task.file.name} supera el tamaño máximo de ${maxSizeText} y no se subirá.\nTu archivo: ${fileSizeText}`);
             continue;
         }
-        totalSize += task.file.size;
+        totalSize += task.isFolder ? 0 : task.file.size;
         validTasks.push(task);
     }
     
@@ -2338,12 +2559,64 @@ async function enqueueFilesForUpload(fileTasks) {
         return;
     }
     
-    uploadQueue.push(...validTasks);
-    totalUploadTasks += validTasks.length;
+    activeUploadTasks = activeUploadTasks.filter(t => t.status === 'uploading' || t.status === 'pending');
     
-    if (!isUploading) {
-        isUploading = true;
-        processNextUpload();
+    const currentBatchTasks = [];
+    for (const task of validTasks) {
+        const taskId = 'upload_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newTask = {
+            id: taskId,
+            file: task.file,
+            relativePath: task.relativePath,
+            isFolder: !!task.isFolder,
+            status: 'pending',
+            percent: 0,
+            speedText: 'Espera...',
+            uploadedBytes: 0,
+            totalBytes: task.isFolder ? 0 : task.file.size,
+            xhr: null,
+            errorMsg: ''
+        };
+        currentBatchTasks.push(newTask);
+        activeUploadTasks.push(newTask);
+    }
+    
+    if (uploadFinishTimeoutId) {
+        clearTimeout(uploadFinishTimeoutId);
+        uploadFinishTimeoutId = null;
+    }
+    const dropZone = document.getElementById('uploadDropZone');
+    if (dropZone) dropZone.style.display = 'none';
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+
+    renderUploadProgressContainer();
+    updateOverallProgressUI();
+    
+    const largeFileThreshold = 1073741824; // 1 GB
+    const largeTasks = currentBatchTasks.filter(t => !t.isFolder && t.file.size >= largeFileThreshold);
+    const smallTasks = currentBatchTasks.filter(t => t.isFolder || t.file.size < largeFileThreshold);
+    
+    if (largeTasks.length >= 2) {
+        largeTasks.sort((a, b) => b.file.size - a.file.size);
+        
+        let currentLargeIdx = 0;
+        function runNextLarge() {
+            if (currentLargeIdx < largeTasks.length) {
+                const task = largeTasks[currentLargeIdx];
+                currentLargeIdx++;
+                uploadTask(task, runNextLarge);
+            } else {
+                smallTasks.forEach(task => {
+                    uploadTask(task, () => {});
+                });
+            }
+        }
+        runNextLarge();
+    } else {
+        currentBatchTasks.forEach(task => {
+            uploadTask(task, () => {});
+        });
     }
 }
 
@@ -2377,19 +2650,33 @@ async function getAllFileEntries(dataTransferItems) {
                 read();
             });
             
-            for (const subEntry of entries) {
-                await traverseEntry(subEntry, relativePath ? relativePath + '/' + entry.name : entry.name);
+            if (entries.length === 0) {
+                fileEntries.push({
+                    isFolder: true,
+                    file: { name: entry.name, size: 0 },
+                    relativePath: relativePath ? relativePath + '/' + entry.name : entry.name
+                });
+            } else {
+                for (const subEntry of entries) {
+                    await traverseEntry(subEntry, relativePath ? relativePath + '/' + entry.name : entry.name);
+                }
             }
         }
     }
     
-    for (const item of dataTransferItems) {
-        if (item.kind === 'file') {
+    const initialEntries = [];
+    for (let i = 0; i < dataTransferItems.length; i++) {
+        const item = dataTransferItems[i];
+        if (item && item.kind === 'file') {
             const entry = item.webkitGetAsEntry();
             if (entry) {
-                await traverseEntry(entry);
+                initialEntries.push(entry);
             }
         }
+    }
+    
+    for (const entry of initialEntries) {
+        await traverseEntry(entry);
     }
     
     return fileEntries;
@@ -2646,6 +2933,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bulkMoveButton')?.addEventListener('click', openBulkMoveModal);
     document.getElementById('bulkDownloadButton')?.addEventListener('click', downloadSelectedFiles);
     document.getElementById('bulkDeleteButton')?.addEventListener('click', deleteSelectedItems);
+    document.getElementById('cancelUploadBtn')?.addEventListener('click', cancelAllUploads);
 
     // ===== NUEVA LÓGICA DE SUBIDA AUTOMÁTICA (CLIC Y ARRASTRE) =====
     const dropZone = document.getElementById('uploadDropZone');
