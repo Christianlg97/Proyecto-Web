@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="gestorarchivos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="admin.css">
+    <link rel="icon" href=".\Favicon\favicon.png" sizes="64x64" type="image/png">
 </head>
 
 <body>
@@ -96,8 +97,10 @@
                     </button>
                 </div>
                 <h2 id="currentUserTitle"></h2>
-                <div class="admin-file-actions" style="display:flex; justify-content:flex-end; gap:10px; margin-bottom: 15px;">
-                    <button class="action-btn" onclick="refreshAdminData()"><i class="fas fa-sync-alt"></i> Refrescar</button>
+                <div class="admin-file-actions"
+                    style="display:flex; justify-content:flex-end; gap:10px; margin-bottom: 15px;">
+                    <button class="action-btn" onclick="refreshAdminData()"><i class="fas fa-sync-alt"></i>
+                        Refrescar</button>
                 </div>
                 <div id="pathBar" class="breadcrumb"></div>
                 <div id="fileList"></div>
@@ -167,18 +170,25 @@
             </div>
             <div class="form-group">
                 <label>Permisos granulares:</label>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 8px; margin-top: 8px;">
-                <label><input type="checkbox" class="perm-checkbox" data-bit="admin"> Administrador (ver archivos de otros)</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="superadmin"> Superadministrador (acceso al panel)</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x20"> Gestionar estados (activar/banear)</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x40"> Modificar límites y cuotas</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x80"> Kickear usuarios</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x100"> Cambiar contraseña de otros</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x200"> Eliminar usuarios</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x400"> Gestionar IPs baneadas</label>
-                <label><input type="checkbox" class="perm-checkbox" data-bit="0x800"> Configuración global</label>
-            </div>
-            <small style="color: var(--text-muted);">Nota: Los bits base (LOGIN y gestor de archivos) son implícitos.</small>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 8px; margin-top: 8px;">
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="admin"> Administrador (ver archivos de
+                        otros)</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="superadmin"> Superadministrador
+                        (acceso al panel)</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x20"> Gestionar estados
+                        (activar/banear)</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x40"> Modificar límites y
+                        cuotas</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x80"> Kickear usuarios</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x100"> Cambiar contraseña de
+                        otros</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x200"> Eliminar usuarios</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x400"> Gestionar IPs baneadas</label>
+                    <label><input type="checkbox" class="perm-checkbox" data-bit="0x800"> Configuración global</label>
+                </div>
+                <small style="color: var(--text-muted);">Nota: Los bits base (LOGIN y gestor de archivos) son
+                    implícitos.</small>
             </div>
             <div class="modal-buttons">
                 <button class="modal-btn cancel" onclick="closeAdminModal('editLimitsModal')">Cancelar</button>

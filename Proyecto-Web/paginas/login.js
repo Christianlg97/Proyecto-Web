@@ -11,7 +11,7 @@ const API_URL = '/api'; // URL base para las peticiones al backend (vía Nginx p
  */
 const translations = {
     es: {
-        title: 'Sistema de Gestión de Archivos',
+        title: 'Login',
         darkMode: 'Oscuro',
         lightMode: 'Claro',
         loginTitle: 'Iniciar Sesión',

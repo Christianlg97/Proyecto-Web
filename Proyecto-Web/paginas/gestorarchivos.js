@@ -12,7 +12,7 @@ const API_URL = '/api'; // URL base para las peticiones al backend (vía Nginx p
  */
 const translations = {
     es: {
-        title: 'Sistema de Gestión de Archivos',
+        title: 'Gestor de archivos',
         darkMode: 'Oscuro',
         lightMode: 'Claro',
         loginTitle: 'Iniciar Sesión',
@@ -484,11 +484,11 @@ function getFormattedTotalQuota() {
 function formatBytesShort(bytes) {
     if (bytes === 0) return '0 B';
     if (!bytes) return '--';
-    
+
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -1986,7 +1986,7 @@ async function loadFileList() {
                 if (dropZone) dropZone.style.display = '';
                 if (hiddenFileInput) hiddenFileInput.style.display = 'none';
             }
-            
+
             if (!browsingOtherUser) loadDashboardStats();
         } else {
             showMessage('uploadMessage', `<i class="fas fa-exclamation-circle"></i> ${escapeHTML(data.message || translations[currentLanguage].uploadError)}`, 'error');
@@ -2002,6 +2002,13 @@ async function loadFileList() {
 function displayFiles(files) {
     const fileListDiv = document.getElementById('fileList');
     if (!fileListDiv) return;
+
+    // Guardar el foco y posición del cursor del input de búsqueda antes de mover el nodo
+    const searchInput = document.getElementById('searchInput');
+    const searchHadFocus = searchInput && document.activeElement === searchInput;
+    const searchSelStart = searchHadFocus ? searchInput.selectionStart : null;
+    const searchSelEnd = searchHadFocus ? searchInput.selectionEnd : null;
+
     const preservedControls = document.createDocumentFragment();
     const pathBar = document.getElementById('currentPath');
     const searchContainer = document.getElementById('searchContainer');
@@ -2021,6 +2028,12 @@ function displayFiles(files) {
         const controlsSlot = document.getElementById('fileListControls');
         if (controlsSlot) controlsSlot.appendChild(preservedControls);
         placeManagerControls();
+
+        // Restaurar foco si lo tenía antes
+        if (searchHadFocus) {
+            const si = document.getElementById('searchInput');
+            if (si) { si.focus(); si.setSelectionRange(searchSelStart, searchSelEnd); }
+        }
         return;
     }
 
@@ -2089,6 +2102,12 @@ function displayFiles(files) {
     placeManagerControls();
     updateCheckboxState();
     updateSelectedCount();
+
+    // Restaurar foco y posición del cursor después de re-insertar el searchContainer en el DOM
+    if (searchHadFocus) {
+        const si = document.getElementById('searchInput');
+        if (si) { si.focus(); si.setSelectionRange(searchSelStart, searchSelEnd); }
+    }
 }
 
 // ============================================================
@@ -2255,10 +2274,10 @@ function getFileIconClass(filename) {
 function renderUploadProgressContainer() {
     const uploadMessage = document.getElementById('uploadMessage');
     if (!uploadMessage) return;
-    
+
     uploadMessage.className = 'info-message';
     uploadMessage.style.display = 'block';
-    
+
     let html = `
         <div id="contenedor-barra-progreso" style="text-align: left; width: 100%; padding: 15px 0; font-family: inherit;">
             <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
@@ -2273,10 +2292,10 @@ function renderUploadProgressContainer() {
             
             <div class="upload-progress-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;">
     `;
-    
+
     activeUploadTasks.forEach(task => {
         const fileIcon = getFileIconClass(task.file.name);
-        
+
         let fileDisplayName = task.relativePath;
         let folderPrefix = '';
         if (task.relativePath.includes('/')) {
@@ -2286,12 +2305,12 @@ function renderUploadProgressContainer() {
             folderPrefix = `<i class="fas fa-folder" style="color: #ffc107; margin-right: 4px;" title="Carpeta: ${escapeHTML(folder)}"></i> <span style="color: var(--text-muted); font-size: 0.85em;">${escapeHTML(folder)}/</span>`;
             fileDisplayName = name;
         }
-        
+
         if (task.isFolder) {
             folderPrefix = `<i class="fas fa-folder" style="color: #ffc107; margin-right: 4px;"></i>`;
             fileDisplayName = task.relativePath;
         }
-        
+
         html += `
             <div id="item_${task.id}" class="upload-progress-item" style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg);">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
@@ -2310,31 +2329,31 @@ function renderUploadProgressContainer() {
             </div>
         `;
     });
-    
+
     html += `
             </div>
         </div>
     `;
-    
+
     uploadMessage.innerHTML = html;
 }
 
 function updateTaskUI(task) {
     const itemEl = document.getElementById(`item_${task.id}`);
     if (!itemEl) return;
-    
+
     const fillEl = itemEl.querySelector('.upload-progress-bar-fill');
     const percentEl = itemEl.querySelector('.upload-percent-text');
     const speedEl = itemEl.querySelector('.upload-speed-text');
     const iconEl = itemEl.querySelector('.upload-item-status-icon');
-    
+
     if (fillEl) {
         fillEl.style.width = `${task.percent}%`;
         fillEl.className = 'upload-progress-bar-fill';
         if (task.status === 'success') fillEl.classList.add('success');
         if (task.status === 'error') fillEl.classList.add('error');
     }
-    
+
     if (percentEl) {
         if (task.status === 'success') {
             percentEl.innerHTML = `<span style="color: var(--success); font-weight: bold;"><i class="fas fa-check-circle"></i> ${task.isFolder ? 'Creada' : 'Completado'}</span>`;
@@ -2344,7 +2363,7 @@ function updateTaskUI(task) {
             percentEl.textContent = `${Math.round(task.percent)}%`;
         }
     }
-    
+
     if (speedEl) {
         if (task.status === 'success' || task.status === 'error') {
             speedEl.textContent = task.status === 'error' ? task.errorMsg : '';
@@ -2352,7 +2371,7 @@ function updateTaskUI(task) {
             speedEl.textContent = task.speedText;
         }
     }
-    
+
     if (iconEl) {
         if (task.status === 'success') {
             iconEl.className = 'upload-item-status-icon fas fa-check-circle';
@@ -2373,28 +2392,28 @@ function updateTaskUI(task) {
 function updateOverallProgressUI() {
     const uploadMessage = document.getElementById('uploadMessage');
     if (!uploadMessage) return;
-    
+
     const tasks = activeUploadTasks;
     if (tasks.length === 0) return;
-    
+
     const completedCount = tasks.filter(t => t.status === 'success' || t.status === 'error').length;
     const totalCount = tasks.length;
-    
+
     const totalPercent = tasks.reduce((sum, t) => sum + t.percent, 0);
     const overallPercent = Math.round(totalPercent / totalCount);
-    
+
     const overallBar = document.getElementById('overallUploadProgressBar');
     if (overallBar) {
         overallBar.style.width = `${overallPercent}%`;
     }
-    
+
     const overallTitle = document.getElementById('overallUploadTitle');
     const cancelBtn = document.getElementById('cancelUploadBtn');
     const dropZone = document.getElementById('uploadDropZone');
-    
+
     if (completedCount === totalCount) {
         if (cancelBtn) cancelBtn.style.display = 'none';
-        
+
         if (overallTitle) {
             const hasErrors = tasks.some(t => t.status === 'error');
             const isEs = currentLanguage === 'es';
@@ -2404,7 +2423,7 @@ function updateOverallProgressUI() {
                 overallTitle.innerHTML = `<i class="fas fa-check-circle" style="color: var(--success);"></i> ${isEs ? '¡Todos los archivos subidos exitosamente!' : 'All files uploaded successfully!'} (${completedCount}/${totalCount})`;
             }
         }
-        
+
         if (!uploadFinishTimeoutId) {
             loadFileList();
             uploadFinishTimeoutId = setTimeout(() => {
@@ -2422,7 +2441,7 @@ function updateOverallProgressUI() {
     } else {
         if (cancelBtn) cancelBtn.style.display = 'inline-flex';
         if (dropZone) dropZone.style.display = 'none';
-        
+
         if (overallTitle) {
             const isEs = currentLanguage === 'es';
             overallTitle.innerHTML = `<i class="fas fa-cloud-upload-alt fa-spin"></i> ${isEs ? 'Subiendo' : 'Uploading'} ${completedCount} ${isEs ? 'de' : 'of'} ${totalCount} ${isEs ? 'archivos' : 'files'}... (${overallPercent}%)`;
@@ -2433,7 +2452,7 @@ function updateOverallProgressUI() {
 function cancelAllUploads() {
     const tasksToCancel = activeUploadTasks.filter(t => t.status === 'uploading' || t.status === 'pending');
     if (tasksToCancel.length === 0) return;
-    
+
     tasksToCancel.forEach(task => {
         if (task.xhr) {
             task.xhr.onload = null;
@@ -2448,12 +2467,12 @@ function cancelAllUploads() {
             }
             task.xhr = null;
         }
-        
+
         task.status = 'error';
         task.errorMsg = currentLanguage === 'es' ? 'Cancelado' : 'Cancelled';
         updateTaskUI(task);
     });
-    
+
     updateOverallProgressUI();
 }
 
@@ -2467,10 +2486,10 @@ function uploadTask(task, onDoneCallback) {
         onDoneCallback && onDoneCallback();
         return;
     }
-    
+
     task.status = 'uploading';
     updateTaskUI(task);
-    
+
     if (task.isFolder) {
         const targetFolderName = currentPath ? currentPath + '/' + task.relativePath : task.relativePath;
         fetch(`${API_URL}/mkdir/${user.username}`, {
@@ -2478,61 +2497,61 @@ function uploadTask(task, onDoneCallback) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: user.token, folderName: targetFolderName })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                task.status = 'success';
-                task.percent = 100;
-                task.speedText = '';
-            } else {
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    task.status = 'success';
+                    task.percent = 100;
+                    task.speedText = '';
+                } else {
+                    task.status = 'error';
+                    task.errorMsg = data.message || 'Error creando carpeta';
+                }
+                updateTaskUI(task);
+                updateOverallProgressUI();
+                onDoneCallback && onDoneCallback();
+            })
+            .catch(() => {
                 task.status = 'error';
-                task.errorMsg = data.message || 'Error creando carpeta';
-            }
-            updateTaskUI(task);
-            updateOverallProgressUI();
-            onDoneCallback && onDoneCallback();
-        })
-        .catch(() => {
-            task.status = 'error';
-            task.errorMsg = 'Error de conexión';
-            updateTaskUI(task);
-            updateOverallProgressUI();
-            onDoneCallback && onDoneCallback();
-        });
+                task.errorMsg = 'Error de conexión';
+                updateTaskUI(task);
+                updateOverallProgressUI();
+                onDoneCallback && onDoneCallback();
+            });
         return;
     }
-    
+
     const targetFolder = getUploadPathForTask(task.relativePath);
     const formData = new FormData();
     formData.append('file', task.file);
     formData.append('token', user.token);
-    
+
     const xhr = new XMLHttpRequest();
     task.xhr = xhr;
-    
+
     let uploadUrl = `${API_URL}/upload/${user.username}?token=${user.token}`;
     if (targetFolder) {
         uploadUrl += `&path=${encodeURIComponent(targetFolder)}`;
     }
-    
+
     xhr.open('POST', uploadUrl, true);
-    
+
     let uploadStartTime = Date.now();
     let lastLoaded = 0;
     let lastTime = uploadStartTime;
-    
+
     xhr.upload.onprogress = function (event) {
         if (event.lengthComputable) {
             task.percent = Math.max(0, Math.min(100, (event.loaded / event.total) * 100));
             task.uploadedBytes = event.loaded;
-            
+
             const currentTime = Date.now();
             const timeDiff = (currentTime - lastTime) / 1000;
-            
+
             if (timeDiff > 0.5) {
                 const bytesDiff = event.loaded - lastLoaded;
                 const speedBps = bytesDiff / timeDiff;
-                
+
                 if (speedBps > 1024 * 1024) {
                     task.speedText = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
                 } else if (speedBps > 1024) {
@@ -2540,16 +2559,16 @@ function uploadTask(task, onDoneCallback) {
                 } else {
                     task.speedText = `${Math.round(speedBps)} B/s`;
                 }
-                
+
                 lastTime = currentTime;
                 lastLoaded = event.loaded;
             }
-            
+
             updateTaskUI(task);
             updateOverallProgressUI();
         }
     };
-    
+
     xhr.onload = function () {
         if (xhr.status === 200) {
             try {
@@ -2571,7 +2590,7 @@ function uploadTask(task, onDoneCallback) {
             try {
                 const data = JSON.parse(xhr.responseText);
                 if (data.message) errorMsg = data.message;
-            } catch(e) {}
+            } catch (e) { }
             task.status = 'error';
             task.errorMsg = errorMsg;
         }
@@ -2580,7 +2599,7 @@ function uploadTask(task, onDoneCallback) {
         updateOverallProgressUI();
         onDoneCallback && onDoneCallback();
     };
-    
+
     xhr.onerror = function () {
         task.status = 'error';
         task.errorMsg = translations[currentLanguage].connectionError || 'Error de conexión';
@@ -2589,19 +2608,19 @@ function uploadTask(task, onDoneCallback) {
         updateOverallProgressUI();
         onDoneCallback && onDoneCallback();
     };
-    
+
     xhr.send(formData);
 }
 
 async function enqueueFilesForUpload(fileTasks) {
     if (fileTasks.length === 0) return;
-    
+
     const user = getUserSession();
     if (!user) return;
-    
+
     let totalSize = 0;
     const validTasks = [];
-    
+
     for (const task of fileTasks) {
         if (!task.isFolder && task.file.size > userQuotaInfo.max_file_size_bytes && userQuotaInfo.max_file_size_bytes > 0) {
             const maxSizeText = getFormattedMaxFileSize();
@@ -2612,19 +2631,19 @@ async function enqueueFilesForUpload(fileTasks) {
         totalSize += task.isFolder ? 0 : task.file.size;
         validTasks.push(task);
     }
-    
+
     if (validTasks.length === 0) return;
-    
+
     await loadUserQuotaInfo();
-    
+
     if (userQuotaInfo.quota_bytes > 0 && (userQuotaInfo.used_bytes + totalSize) > userQuotaInfo.quota_bytes) {
         const availableSpace = Math.max(0, userQuotaInfo.quota_bytes - userQuotaInfo.used_bytes);
         alert(`No hay suficiente espacio para subir todos los archivos.\nEspacio libre disponible: ${formatBytesShort(availableSpace)}\nTamaño total a subir: ${formatBytesShort(totalSize)}`);
         return;
     }
-    
+
     activeUploadTasks = activeUploadTasks.filter(t => t.status === 'uploading' || t.status === 'pending');
-    
+
     const currentBatchTasks = [];
     for (const task of validTasks) {
         const taskId = 'upload_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -2644,7 +2663,7 @@ async function enqueueFilesForUpload(fileTasks) {
         currentBatchTasks.push(newTask);
         activeUploadTasks.push(newTask);
     }
-    
+
     if (uploadFinishTimeoutId) {
         clearTimeout(uploadFinishTimeoutId);
         uploadFinishTimeoutId = null;
@@ -2656,14 +2675,14 @@ async function enqueueFilesForUpload(fileTasks) {
 
     renderUploadProgressContainer();
     updateOverallProgressUI();
-    
+
     const largeFileThreshold = 1073741824; // 1 GB
     const largeTasks = currentBatchTasks.filter(t => !t.isFolder && t.file.size >= largeFileThreshold);
     const smallTasks = currentBatchTasks.filter(t => t.isFolder || t.file.size < largeFileThreshold);
-    
+
     if (largeTasks.length >= 2) {
         largeTasks.sort((a, b) => b.file.size - a.file.size);
-        
+
         let currentLargeIdx = 0;
         function runNextLarge() {
             if (currentLargeIdx < largeTasks.length) {
@@ -2672,21 +2691,21 @@ async function enqueueFilesForUpload(fileTasks) {
                 uploadTask(task, runNextLarge);
             } else {
                 smallTasks.forEach(task => {
-                    uploadTask(task, () => {});
+                    uploadTask(task, () => { });
                 });
             }
         }
         runNextLarge();
     } else {
         currentBatchTasks.forEach(task => {
-            uploadTask(task, () => {});
+            uploadTask(task, () => { });
         });
     }
 }
 
 async function getAllFileEntries(dataTransferItems) {
     const fileEntries = [];
-    
+
     async function traverseEntry(entry, relativePath = '') {
         if (entry.isFile) {
             const file = await new Promise((resolve, reject) => {
@@ -2698,7 +2717,7 @@ async function getAllFileEntries(dataTransferItems) {
             });
         } else if (entry.isDirectory) {
             const dirReader = entry.createReader();
-            
+
             const entries = await new Promise((resolve, reject) => {
                 const allEntries = [];
                 function read() {
@@ -2713,7 +2732,7 @@ async function getAllFileEntries(dataTransferItems) {
                 }
                 read();
             });
-            
+
             if (entries.length === 0) {
                 fileEntries.push({
                     isFolder: true,
@@ -2727,7 +2746,7 @@ async function getAllFileEntries(dataTransferItems) {
             }
         }
     }
-    
+
     const initialEntries = [];
     for (let i = 0; i < dataTransferItems.length; i++) {
         const item = dataTransferItems[i];
@@ -2738,11 +2757,11 @@ async function getAllFileEntries(dataTransferItems) {
             }
         }
     }
-    
+
     for (const entry of initialEntries) {
         await traverseEntry(entry);
     }
-    
+
     return fileEntries;
 }
 
@@ -2956,6 +2975,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('clearFiltersBtn')?.addEventListener('click', clearAllFilters);
 
+    // Listener de búsqueda: filtra la lista al escribir
+    const searchInputEl = document.getElementById('searchInput');
+    if (searchInputEl) {
+        searchInputEl.addEventListener('input', () => {
+            applyFilters();
+        });
+        // Limpiar búsqueda al pulsar Escape
+        searchInputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchInputEl.value = '';
+                applyFilters();
+                searchInputEl.blur();
+            }
+        });
+    }
+
     document.getElementById('saveRename')?.addEventListener('click', renameItem);
     document.getElementById('saveMkdir')?.addEventListener('click', createFolder);
     document.getElementById('saveMoveBrowser')?.addEventListener('click', moveFileToCurrentFolder);
@@ -3071,7 +3106,7 @@ function getFileTypeDisplay(name, isDir) {
         return currentLanguage === 'es' ? 'Carpeta' : 'Folder';
     }
     const ext = name.split('.').pop().toLowerCase();
-    
+
     const types = {
         es: {
             pdf: 'Documento PDF',
@@ -3122,7 +3157,7 @@ function getFileTypeDisplay(name, isDir) {
             default: `${ext.toUpperCase()} File`
         }
     };
-    
+
     const langTypes = types[currentLanguage] || types['es'];
     return langTypes[ext] || langTypes['default'];
 }
@@ -3154,7 +3189,7 @@ function rightClickSelect(filePath) {
 function showContextMenu(e, item) {
     e.preventDefault();
     rightClickSelect(item.path);
-    
+
     let menu = document.getElementById('customContextMenu');
     if (!menu) {
         menu = document.createElement('div');
@@ -3162,13 +3197,13 @@ function showContextMenu(e, item) {
         menu.className = 'custom-context-menu';
         document.body.appendChild(menu);
     }
-    
+
     const count = selectedFiles.size;
     const isSingle = count === 1;
     const isDir = item.isDirectory;
-    
+
     let html = '';
-    
+
     // 1. Enviar (Send)
     html += `
         <div class="context-menu-item" onclick="triggerContextAction('send')">
@@ -3176,7 +3211,7 @@ function showContextMenu(e, item) {
             <span>${translations[currentLanguage].send} ${!isSingle ? `(${count})` : ''}</span>
         </div>
     `;
-    
+
     // 2. Mover (Move)
     html += `
         <div class="context-menu-item" onclick="triggerContextAction('move')">
@@ -3184,7 +3219,7 @@ function showContextMenu(e, item) {
             <span>${translations[currentLanguage].move} ${!isSingle ? `(${count})` : ''}</span>
         </div>
     `;
-    
+
     // 3. Descargar (Download / Download ZIP)
     const downloadLabel = isSingle && !isDir ? translations[currentLanguage].download : translations[currentLanguage].downloadZip;
     html += `
@@ -3193,7 +3228,7 @@ function showContextMenu(e, item) {
             <span>${downloadLabel} ${!isSingle ? `(${count})` : ''}</span>
         </div>
     `;
-    
+
     // 4. Compartir (Share) (only if single file)
     if (isSingle && !isDir) {
         html += `
@@ -3203,7 +3238,7 @@ function showContextMenu(e, item) {
             </div>
         `;
     }
-    
+
     // 5. Renombrar (Rename) (only if single)
     if (isSingle) {
         html += `
@@ -3213,10 +3248,10 @@ function showContextMenu(e, item) {
             </div>
         `;
     }
-    
+
     // Separador
     html += `<div class="context-menu-separator"></div>`;
-    
+
     // 6. Eliminar (Delete)
     html += `
         <div class="context-menu-item danger" onclick="triggerContextAction('delete')">
@@ -3224,27 +3259,27 @@ function showContextMenu(e, item) {
             <span>${translations[currentLanguage].delete} ${!isSingle ? `(${count})` : ''}</span>
         </div>
     `;
-    
+
     menu.innerHTML = html;
-    
+
     // Position menu
     menu.style.display = 'block';
-    
+
     const menuWidth = 200;
     const menuHeight = isSingle ? (isDir ? 190 : 230) : 150;
     let posX = e.pageX;
     let posY = e.pageY;
-    
+
     if (posX + menuWidth > window.innerWidth + window.scrollX) {
         posX = e.pageX - menuWidth;
     }
     if (posY + menuHeight > window.innerHeight + window.scrollY) {
         posY = e.pageY - menuHeight;
     }
-    
+
     menu.style.left = posX + 'px';
     menu.style.top = posY + 'px';
-    
+
     // Trigger fade/scale entrance
     setTimeout(() => {
         menu.classList.add('visible');
@@ -3254,12 +3289,12 @@ function showContextMenu(e, item) {
 function triggerContextAction(action) {
     const selectedPaths = Array.from(selectedFiles);
     if (selectedPaths.length === 0) return;
-    
+
     const firstPath = selectedPaths[0];
     const firstItem = filteredFiles.find(f => f.path === firstPath) || { path: firstPath, isDirectory: false, name: firstPath.split('/').pop() };
-    
+
     closeContextMenu();
-    
+
     if (action === 'send') {
         openSendModal();
     } else if (action === 'move') {
@@ -3298,13 +3333,13 @@ function closeContextMenu() {
 }
 
 // Escuchar eventos globales para cerrar el menú contextual
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (!e.target.closest('.custom-context-menu')) {
         closeContextMenu();
     }
 });
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeContextMenu();
     }
